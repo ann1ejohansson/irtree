@@ -1,0 +1,31 @@
+\documentclass{article} 
+\usepackage[a4paper,margin=1in]{geometry} 
+\usepackage{graphicx}
+\usepackage{siunitx}
+\usepackage{makecell}
+\usepackage{natbib}
+\usepackage{multibib} 
+
+\newcites{poster}{IOPS 2024 Poster References} % Define a new bibliography category
+\newcites{main}{Full Reference List} % Define another bibliography category
+
+\setlength{\bibsep}{2pt} % Reduce spacing between references
+
+\begin{document}
+
+{\small % Set smaller font for references
+\nociteposter{*} % Include all entries from the poster bibliography
+\bibliographystyleposter{plain}
+\bibliographyposter{bib-poster}
+}
+
+
+\setcounter{NAT@ctr}{0}
+
+{\small 
+\nocitemain{*} 
+\bibliographystylemain{plain} 
+\bibliographymain{qm_bib} 
+}
+
+\end{document}
