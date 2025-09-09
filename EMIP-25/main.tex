@@ -19,8 +19,8 @@
 \doublespacing
 
 % Use Times New Roman
-\usepackage{fontspec}
-\setmainfont{Times New Roman}
+%\usepackage{fontspec}
+%\setmainfont{Times New Roman}
 
 % For basic formatting
 \usepackage{graphicx}
@@ -118,7 +118,7 @@ For example, consider a student who does \textit{not} skip item $i$ ($Y^{(1)} = 
 
 \begin{figure}[t]
         \centering
-        \includegraphics[width=0.3\linewidth]{EDM-25/figures/tree.pdf}
+        \includegraphics[width=0.3\linewidth]{figures/tree.pdf}
         \caption{A binary decision tree (IRTree model) with 2 nodes reflecting the decision to respond or not ($Y_1$) and whether the response is correct or not ($Y_2$).}
         \label{fig:tree}
 \end{figure}
@@ -195,14 +195,14 @@ Item difficulties and student abilities are estimated with the Elo Rating System
     \centering
     \begin{minipage}{0.5\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{EDM-25/figures/series.jpeg}
+        \includegraphics[width=\linewidth]{figures/series.jpeg}
         \caption{A screenshot of the Series game. A student is asked to fill in the missing number in the sequence. They gain (correct answer) or lose (incorrect answer) coins corresponding to the remaining amount of time in seconds (bottom right). A student can click the question mark (middle right) to retrieve the answer to the item and move on to the next.}
         \label{fig:series}
     \end{minipage}%
     \hfill % Add space between the figures
     \begin{minipage}{0.5\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{EDM-25/figures/scoringrule.png}
+        \includegraphics[width=\linewidth]{figures/scoringrule.png}
         \caption{Visualization of the explicit scoring rule.}
         \label{fig:scoring}
     \end{minipage}
@@ -232,7 +232,7 @@ On average, children skipped approximately 6\% of items in the Series game. Our 
 
 \begin{figure}[htbp]
       \centering
-      \includegraphics[width=0.5\linewidth]{EDM-25/figures/grade_diff.png}
+      \includegraphics[width=0.5\linewidth]{figures/grade_diff.png}
       \caption{Proportion of question mark responses in the Series game, separated by grade and difficulty level (easy = 90\% correct; medium = 75\% correct; hard = 60\% correct). Ribbons around the line denote the $95\%$ confidence interval. Grade refers to the Dutch grade levels; age ranges approximately between 4 and 12 years. QM = question mark. }
       \label{fig:grade_diff}
 \end{figure}  
@@ -245,14 +245,14 @@ Similarly, with increasing number of items played in the Series game, the probab
     \centering
     \begin{minipage}{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{EDM-25/figures/rt.png}
+        \includegraphics[width=\linewidth]{figures/rt.png}
         \caption{The probability of each response type (correct, error, question mark) across response times (seconds). Point size refers to the amount of observations at that data point. The vertical line denotes the deadline to respond, at 20 seconds. The histogram displays the average distribution of response times in the Series game.}
         \label{fig:rt}
     \end{minipage}%
     \hfill
     \begin{minipage}{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{EDM-25/figures/session.png}
+        \includegraphics[width=\linewidth]{figures/session.png}
         \caption{The probability of answering with a question mark or giving an incorrect response, over the first 100 items played in the Series game. Point size refers to the amount of observations at that data point.}
         \label{fig:session}
     \end{minipage}
@@ -285,7 +285,7 @@ The fully estimated IRTtree model had a fixed intercept of $-1.85$ ($p < .001$).
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.75\linewidth]{EDM-25/figures/cor.pdf}
+    \includegraphics[width=0.75\linewidth]{figures/cor.pdf}
     \caption{Correlation between estimated nodes in the fully estimated IRTree model. The left graph displays the correlation between the item skipping threshold ($\beta^{(1)}$), and the item difficulty ($\beta^{(2)}$). The right-hand graph displays the correlation between the individual propensity to skip an item ($\theta^{(1)}$), and the individual propensity to answer incorrectly ($\theta^{(2)}$). For both graphs, The scatter plot denotes individual data points, and the regression line displays the best-fitting linear relationship between the nodes. Density plots denote the distribution of each random parameter.}
     \label{fig:cor}
 \end{figure}
@@ -294,7 +294,7 @@ The fully estimated IRTtree model had a fixed intercept of $-1.85$ ($p < .001$).
 \begin{figure*}[t]
     \centering
     % \includegraphics[width=1\linewidth]{user_interactions.pdf}
-    \includegraphics[width=\textwidth,height=6cm]{EDM-25/figures/user_interactions.pdf}
+    \includegraphics[width=\textwidth,height=6cm]{figures/user_interactions.pdf}
     \caption{Eight individual users extracted based on their estimated propensity to skip and make an incorrect response (center graph). Individual interaction patterns are displayed in a clockwise fashion starting from the upper right corner (low accuracy, high skipping), to the upper left corner (low accuracy, low skipping) of the scatter plot. Each graph plots each each individual's response sequence to items in the Series game. The position on the y axis reflects the response time to the item. Colors denote the response type (correct, incorrect, question mark). While some users had longer response sequences in the extracted data (users C and E), the x axis is limited to showing the first 300 responses, to ease the visualization.
     }
     \label{fig:interactions}
