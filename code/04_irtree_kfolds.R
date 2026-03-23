@@ -1,157 +1,159 @@
-## model robustness check
-## k-folds cross validation
+## 04_irtree_kfolds.R
+##
+## Robustness check for the four IRTree models using k-fold cross-validation.
+## For each fold, 10% of responses per student per node are held out. All four
+## models from 03_irtree_fit.R are refitted on the remaining data, and RMSE
+## is computed on the held-out responses. This tests whether model fit
+## generalises beyond the training data.
+##
+## Cross-validation strategy:
+##   - Holdout is sampled per student per node, not globally, to ensure
+##     each student contributes equally to the validation set.
+##   - Predictions are made on the held-out rows using allow.new.levels = TRUE
+##     (relevant if a student/item has no training data in a given fold).
+##   - The fold results are saved after each fold so progress is not lost
+##     if the run is interrupted.
+##
+## Output: results/k_folds/ — per-model per-fold summaries, and k_folds.Rdata
 
 source("02_irtree_prep.R")
 
-# make unique row identifier (for data checking purposes)
+# Unique row identifier (for auditing which rows were held out per fold)
 dat_irt$id_node <- paste0(dat_irt$id, "-", dat_irt$node)
 
-# row indices
+# Within-student, within-node row index (used for reproducible holdout sampling)
 dat_irt[, i := 1:.N, .(user_id, node)]
+
+# response_NA is a copy of response; held-out values will be set to NA
 dat_irt[, response_NA := response]
 
-# final model data
-k_folds <- data.frame(k = rep(1:10, each = 4),
-                      perc_na = NA,
-                      model = rep(c(1:4), times = 10),
-                      aic = NA,
-                      bic = NA,
-                      rmse = NA)
+# Results table: one row per model per fold
+k_folds <- data.frame(
+  k       = rep(1:n_folds, each = 4),
+  perc_na = NA,   # actual fraction held out (sanity check)
+  model   = rep(1:4, times = n_folds),
+  aic     = NA,
+  bic     = NA,
+  rmse    = NA    # root mean squared error on held-out responses
+)
 
-removed = data.frame(k = numeric(),
-                     id_node = numeric())
+# Track which rows were held out in each fold (for reproducibility checks)
+removed <- data.frame(k = numeric(), id_node = numeric())
 
-set.seed(1234)
-for (k in 1:10) { # 10 folds
-  cat("\n\nFold nr:", k)
+set.seed(random_seed)
+
+for (k in 1:n_folds) {
+  cat("\n\nFold:", k, "— Start time:"); print(Sys.time())
   t_fold <- Sys.time()
-  cat("\nStart time:"); print(t_fold)
-  # for every person and node, set 10% responses missing
-  # indices for to-be removed rows
-  dat_val <- dat_irt[!is.na(response), .(i = sample(1:.N, ceiling(.N*.1))),.(user_id, node)]
-  dat_val$remove = 1 # rows to be set to NA
 
-  # merge data tables
+  # Sample holdout_frac of responses per student per node
+  dat_val        <- dat_irt[!is.na(response),
+                             .(i = sample(1:.N, ceiling(.N * holdout_frac))),
+                             .(user_id, node)]
+  dat_val$remove <- 1  # flag rows to be held out
+
+  # Merge flags back into the full dataset and set held-out responses to NA
   dat_fit <- dat_val[dat_irt, on = c("node", "user_id", "i")]
-  # set rows (response) to NA
   dat_fit[is.na(remove), remove := 0]
   dat_fit[remove == 1, response_NA := NA]
 
-  k_folds[k_folds$k == k,]$perc_na <- rep(sum(is.na(dat_fit$response_NA) & dat_fit$remove == 1, na.rm = T)/dat_fit[, .N], 4)
+  # Record actual holdout fraction and which rows were removed
+  k_folds[k_folds$k == k, ]$perc_na <-
+    rep(sum(is.na(dat_fit$response_NA) & dat_fit$remove == 1, na.rm = TRUE) / dat_fit[, .N], 4)
+  removed <- rbind(removed, data.frame(k = k, id_node = dat_fit[remove == 1, id_node]))
 
-  removed_tmp = data.frame(k = k,
-                          id_node = dat_fit[remove == 1, id_node])
-  removed <- rbind(removed, removed_tmp)
+  # ----------------------------------------------------------
+  # Fit all four models on training data (response_NA), then
+  # predict on held-out rows and compute RMSE.
+  # Models mirror those in 03_irtree_fit.R exactly.
+  # ----------------------------------------------------------
 
-  # fit tree models
-  # fit mod 1 (full tree)
+  # Model 1: fully estimated IRTree
   t <- Sys.time()
   m <- try(glmer(response_NA ~ 1 + (0 + factor(node) | item_id) + (0 + factor(node) | user_id),
-                    data = dat_fit,
-                    family = "binomial"))
-  if(class(m) != "try-error") {
-    cat("\nt mod 1, fold", k, ": ", difftime(Sys.time(), t), units(difftime(Sys.time(), t)))
-    k_folds[k_folds$k == k & k_folds$model == 1, ]$aic <- AIC(m)
-    k_folds[k_folds$k == k & k_folds$model == 1, ]$bic <- BIC(m)
-
+                 data = dat_fit, family = "binomial"))
+  if (class(m) != "try-error") {
+    cat("\n  Model 1 time:", round(difftime(Sys.time(), t, units = "mins"), 1), "min")
     p <- predict(m, newdata = dat_fit, allow.new.levels = TRUE)
     dat_fit[, pred_mod := plogis(p)]
     rmse <- dat_fit[remove == 1 & !is.na(response), sqrt(mean((response - pred_mod)^2))]
-    k_folds[k_folds$k == k & k_folds$model == 1, ]$rmse <- rmse
-    cat("\n")
-    print(k_folds[k_folds$k == k & k_folds$model == 1, c("aic", "bic", "rmse")])
+    k_folds[k_folds$k == k & k_folds$model == 1, c("aic", "bic", "rmse")] <-
+      list(AIC(m), BIC(m), rmse)
     model_sum <- summary(m)
     save(model_sum, file = file.path(kfolds_dir, paste0("mod1_k", k, ".Rdata")))
     rm(m); gc()
   }
 
-  # fit mod 2 (item constrained)
+  # Model 2: item-constrained
   t <- Sys.time()
   m <- try(glmer(response_NA ~ 1 + (1 | item_id) + (0 + factor(node) | user_id),
-                             data = dat_fit,
-                             family = "binomial"))
-  if(class(m) != "try-error") {
-    cat("\nt mod 2, fold", k, ": ", difftime(Sys.time(), t), units(difftime(Sys.time(), t)))
-    k_folds[k_folds$k == k & k_folds$model == 2, ]$aic <- AIC(m)
-    k_folds[k_folds$k == k & k_folds$model == 2, ]$bic <- BIC(m)
-
+                 data = dat_fit, family = "binomial"))
+  if (class(m) != "try-error") {
+    cat("\n  Model 2 time:", round(difftime(Sys.time(), t, units = "mins"), 1), "min")
     p <- predict(m, newdata = dat_fit, allow.new.levels = TRUE)
     dat_fit[, pred_mod := plogis(p)]
     rmse <- dat_fit[remove == 1 & !is.na(response), sqrt(mean((response - pred_mod)^2))]
-    k_folds[k_folds$k == k & k_folds$model == 2, ]$rmse <- rmse
-
-    cat("\n")
-    print(k_folds[k_folds$k == k & k_folds$model == 2, c("aic", "bic", "rmse")])
+    k_folds[k_folds$k == k & k_folds$model == 2, c("aic", "bic", "rmse")] <-
+      list(AIC(m), BIC(m), rmse)
     model_sum <- summary(m)
     save(model_sum, file = file.path(kfolds_dir, paste0("mod2_k", k, ".Rdata")))
     rm(m); gc()
   }
 
-
-  # fit mod 3 (person constrained)
+  # Model 3: user-constrained
   t <- Sys.time()
   m <- try(glmer(response_NA ~ 1 + (0 + factor(node) | item_id) + (1 | user_id),
-                               data = dat_fit,
-                               family = "binomial"))
-  if(class(m) != "try-error") {
-    cat("\nt mod 3, fold", k, ": ", difftime(Sys.time(), t), units(difftime(Sys.time(), t)))
-    k_folds[k_folds$k == k & k_folds$model == 3, ]$aic <- AIC(m)
-    k_folds[k_folds$k == k & k_folds$model == 3, ]$bic <- BIC(m)
-
-    p <-predict(m, newdata = dat_fit, allow.new.levels = TRUE)
+                 data = dat_fit, family = "binomial"))
+  if (class(m) != "try-error") {
+    cat("\n  Model 3 time:", round(difftime(Sys.time(), t, units = "mins"), 1), "min")
+    p <- predict(m, newdata = dat_fit, allow.new.levels = TRUE)
     dat_fit[, pred_mod := plogis(p)]
     rmse <- dat_fit[remove == 1 & !is.na(response), sqrt(mean((response - pred_mod)^2))]
-    k_folds[k_folds$k == k & k_folds$model == 3, ]$rmse <- rmse
-
-    cat("\n")
-    print(k_folds[k_folds$k == k & k_folds$model == 3, c("aic", "bic", "rmse")])
+    k_folds[k_folds$k == k & k_folds$model == 3, c("aic", "bic", "rmse")] <-
+      list(AIC(m), BIC(m), rmse)
     model_sum <- summary(m)
     save(model_sum, file = file.path(kfolds_dir, paste0("mod3_k", k, ".Rdata")))
     rm(m); gc()
   }
 
-
-  # fit mod 4 (fully constrained)
+  # Model 4: fully constrained (unidimensional baseline)
   t <- Sys.time()
   m <- try(glmer(response_NA ~ 1 + factor(node) + (1 | item_id) + (1 | user_id),
-                        data = dat_fit,
-                        family = "binomial"))
-  if(class(m) != "try-error") {
-    cat("\nt mod 4, fold", k, ": ", difftime(Sys.time(), t), units(difftime(Sys.time(), t)))
-    k_folds[k_folds$k == k & k_folds$model == 4, ]$aic <- AIC(m)
-    k_folds[k_folds$k == k & k_folds$model == 4, ]$bic <- BIC(m)
-
+                 data = dat_fit, family = "binomial"))
+  if (class(m) != "try-error") {
+    cat("\n  Model 4 time:", round(difftime(Sys.time(), t, units = "mins"), 1), "min")
     p <- predict(m, newdata = dat_fit[remove == 1, ], allow.new.levels = TRUE)
     dat_fit[remove == 1, pred_mod := plogis(p)]
     rmse <- dat_fit[remove == 1 & !is.na(response), sqrt(mean((response - pred_mod)^2))]
-    k_folds[k_folds$k == k & k_folds$model == 4, ]$rmse <- rmse
-
-    cat("\n")
-    print(k_folds[k_folds$k == k & k_folds$model == 4, c("aic", "bic", "rmse")])
+    k_folds[k_folds$k == k & k_folds$model == 4, c("aic", "bic", "rmse")] <-
+      list(AIC(m), BIC(m), rmse)
     model_sum <- summary(m)
     save(model_sum, file = file.path(kfolds_dir, paste0("mod4_k", k, ".Rdata")))
     rm(m); gc()
   }
 
-  cat("\nt fold:", k, ": ", difftime(Sys.time(), t_fold), units(difftime(Sys.time(), t_fold)))
+  cat("\n  Fold", k, "total time:", round(difftime(Sys.time(), t_fold, units = "mins"), 1), "min")
   rm(dat_val, dat_fit, p, rmse); gc()
 
+  # Save progress after every fold so partial results are not lost
   save(k_folds, file = file.path(kfolds_dir, "k_folds.Rdata"))
 }
 
-# Average RMSE per model across folds
+# ============================================================
+# SUMMARISE RESULTS
+# ============================================================
 load(file.path(kfolds_dir, "k_folds.Rdata"))
-mean(k_folds[k_folds$model == 1, ]$rmse, na.rm = T)
-mean(k_folds[k_folds$model == 2, ]$rmse, na.rm = T)
-mean(k_folds[k_folds$model == 3, ]$rmse, na.rm = T)
-mean(k_folds[k_folds$model == 4, ]$rmse, na.rm = T)
 
-# CHECKS
+cat("\n\nMean RMSE across folds:\n")
+for (mod in 1:4) {
+  cat("  Model", mod, ":", round(mean(k_folds[k_folds$model == mod, ]$rmse, na.rm = TRUE), 4), "\n")
+}
+
+# ============================================================
+# DEVELOPMENT CHECKS (commented out)
+# ============================================================
 # set.seed(1234)
-# users <- sample(unique(dat_irt$user_id), 20)
-# dat_irt <- dat_irt[dat_irt$user_id %in% users,]; gc()
+# users <- sample(unique(dat_irt$user_id), 20)         # test on small subset
+# dat_irt <- dat_irt[dat_irt$user_id %in% users, ]; gc()
 # table(dat_fit$response, dat_fit$remove, dat_fit$node, useNA = "always")
-# table(is.na(match(removed[removed$k == 4,]$id_node, removed[removed$k == 9,]$id_node)))
-
-
-
+# table(is.na(match(removed[removed$k == 4, ]$id_node, removed[removed$k == 9, ]$id_node)))
