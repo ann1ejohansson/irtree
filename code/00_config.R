@@ -99,3 +99,24 @@ for (.d in c(data_dir, results_dir, models_dir, kfolds_dir, plots_dir)) {
   dir.create(.d, showWarnings = FALSE, recursive = TRUE)
 }
 rm(.d)
+
+# ============================================================
+# PLOTTING TOOLS
+# ============================================================
+
+colors = c("grey40", "tomato3", "turquoise4", "tan2")
+export_pdf <- function(
+  plot_object,
+  height = 10,
+  width = 12,
+  name = paste0(deparse(substitute(plot_object)), ".pdf")
+) {
+  pdf(
+    file = file.path(plots_dir, name),
+    height = height,
+    width = width,
+    bg = "white"
+  )
+  print(plot_object)
+  dev.off()
+}
