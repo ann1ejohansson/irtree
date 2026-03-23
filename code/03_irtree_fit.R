@@ -1,6 +1,6 @@
 ## fit irtree models
 
-source("irtree_prep.R")
+source("02_irtree_prep.R")
 
 model_comp <- data.frame(model = c("fully estimated", "item-constrained", "user-constrained", "fully constrained"),
                          cor_theta = NA,

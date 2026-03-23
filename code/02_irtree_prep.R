@@ -15,7 +15,7 @@ library(lme4)
     grep("--file=", args, value = TRUE)
   )))
 }
-source(file.path(.this_dir, "config.R"))
+source(file.path(.this_dir, "00_config.R"))
 rm(.this_dir)
 
 # get data
@@ -39,7 +39,7 @@ rm(logs_clean, logs_clean_node1, logs_clean_node2)
 gc()
 dat_irt <- data.table(dat_irt)
 
-# filter users with at least min_skips skip responses (defined in config.R)
+# filter users with at least min_skips skip responses (defined in 00_config.R)
 users <- dat_irt[node == 1 & response == 1, .N, .(user_id)][
   N >= min_skips,
   user_id

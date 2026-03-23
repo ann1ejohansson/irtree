@@ -1,7 +1,7 @@
 ## model robustness check
 ## k-folds cross validation
 
-source("irtree_prep.R")
+source("02_irtree_prep.R")
 
 # make unique row identifier (for data checking purposes)
 dat_irt$id_node <- paste0(dat_irt$id, "-", dat_irt$node)

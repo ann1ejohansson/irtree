@@ -1,4 +1,4 @@
-## generate_example_data.R
+## 01_generate_example_data.R
 ##
 ## Generates synthetic data that mimics the structure of the Prowise Learn
 ## (Math Garden) dataset used in the IRTree analysis.
@@ -9,18 +9,18 @@
 ## description of the scoring rule and ability update equations).
 ##
 ## This script saves logs_clean.Rdata to the working directory, which is
-## the input expected by irtree_prep.R, irtree_fit.R, and irtree_kfolds.R.
+## the input expected by 02_irtree_prep.R, 03_irtree_fit.R, and 04_irtree_kfolds.R.
 ##
 ## Usage:
-##   source("generate_example_data.R")
-##   # or: Rscript generate_example_data.R
+##   source("01_generate_example_data.R")
+##   # or: Rscript 01_generate_example_data.R
 ##
 ## Author: Annie M. Johansson
 
 library(MASS) # mvrnorm() for correlated person/item parameters
 library(data.table) # consistent with downstream scripts
 
-# Source config.R
+# Source 00_config.R
 .this_dir <- if (
   requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()
 ) {
@@ -33,7 +33,7 @@ library(data.table) # consistent with downstream scripts
     grep("--file=", args, value = TRUE)
   )))
 }
-source(file.path(.this_dir, "config.R"))
+source(file.path(.this_dir, "00_config.R"))
 rm(.this_dir)
 
 set.seed(random_seed)
@@ -168,7 +168,7 @@ p_error <- plogis(logs$theta2 - logs$beta2)
 error <- rbinom(nrow(logs), 1, p_error)
 
 # correct_answered: 1 = correct, 0 = incorrect, NA = skip
-# NA propagation: ifelse(NA == 0, 1, 0) returns NA in irtree_prep.R,
+# NA propagation: ifelse(NA == 0, 1, 0) returns NA in 02_irtree_prep.R,
 # correctly excluding skipped items from node 2 likelihood in glmer.
 logs$correct_answered <- ifelse(logs$q == 1, NA_real_, ifelse(error == 1, 0, 1))
 
@@ -260,7 +260,7 @@ for (d in 0:2) {
   cat(label, ":", rate, "\n")
 }
 
-# Inclusion criterion: irtree_prep.R keeps users with >= 10 skip responses
+# Inclusion criterion: 02_irtree_prep.R keeps users with >= 10 skip responses
 skips_per_user <- sim_logs[q == 1, .N, user_id]
 n_eligible <- sum(skips_per_user$N >= 10)
 cat(
@@ -290,4 +290,4 @@ cat(
 # ============================================================
 save(sim_logs, file = data_path)
 cat("\nSaved: sim_logs.Rdata\n")
-cat("Run irtree_prep.R, irtree_fit.R, or irtree_kfolds.R as usual.\n")
+cat("Run 02_irtree_prep.R, 03_irtree_fit.R, or 04_irtree_kfolds.R as usual.\n")
