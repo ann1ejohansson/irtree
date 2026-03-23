@@ -15,27 +15,28 @@
 ##   source("generate_example_data.R")
 ##   # or: Rscript generate_example_data.R
 ##
-## Author: Generated for local testing of IRTree manuscript code (BJET 2026)
+## Author: Annie M. Johansson
 
 library(MASS) # mvrnorm() for correlated person/item parameters
 library(data.table) # consistent with downstream scripts
 
-# Set working directory to the script's own location so that relative paths
-# (e.g. "data/sim_logs.Rdata") resolve correctly regardless of where R is
-# launched from. Works in both RStudio (interactive) and Rscript (CLI) modes.
-if (
+# Source config.R
+.this_dir <- if (
   requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()
 ) {
-  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+  dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path))
 } else {
   args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- args[grepl("--file=", args)]
-  if (length(file_arg) > 0) {
-    setwd(dirname(normalizePath(sub("--file=", "", file_arg))))
-  }
+  dirname(normalizePath(sub(
+    "--file=",
+    "",
+    grep("--file=", args, value = TRUE)
+  )))
 }
+source(file.path(.this_dir, "config.R"))
+rm(.this_dir)
 
-set.seed(42)
+set.seed(random_seed)
 
 # ============================================================
 # SIMULATION PARAMETERS
@@ -288,6 +289,6 @@ cat(
 # SAVE
 # ============================================================
 dir.create("data", showWarnings = FALSE, recursive = TRUE)
-save(sim_logs, file = "data/sim_logs.Rdata")
+save(sim_logs, file = data_path)
 cat("\nSaved: sim_logs.Rdata\n")
 cat("Run irtree_prep.R, irtree_fit.R, or irtree_kfolds.R as usual.\n")

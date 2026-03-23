@@ -3,9 +3,24 @@
 library(data.table)
 library(lme4)
 
+.this_dir <- if (
+  requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()
+) {
+  dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path))
+} else {
+  args <- commandArgs(trailingOnly = FALSE)
+  dirname(normalizePath(sub(
+    "--file=",
+    "",
+    grep("--file=", args, value = TRUE)
+  )))
+}
+source(file.path(.this_dir, "config.R"))
+rm(.this_dir)
+
 # get data
-load("data/sim_logs.Rdata")
-logs_clean <- sim_logs
+load(data_path)
+logs_clean <- get(data_object)
 
 logs_clean_node1 <- logs_clean
 logs_clean_node1$node <- 1
@@ -24,7 +39,10 @@ rm(logs_clean, logs_clean_node1, logs_clean_node2)
 gc()
 dat_irt <- data.table(dat_irt)
 
-# filter users with at least 10 qm responses
-users <- dat_irt[node == 1 & response == 1, .N, .(user_id)][N >= 10, user_id]
+# filter users with at least min_skips skip responses (defined in config.R)
+users <- dat_irt[node == 1 & response == 1, .N, .(user_id)][
+  N >= min_skips,
+  user_id
+]
 dat_irt <- dat_irt[user_id %in% users, ]
 rm(users)
