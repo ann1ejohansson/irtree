@@ -61,7 +61,7 @@ for (k in 1:10) { # 10 folds
     cat("\n")
     print(k_folds[k_folds$k == k & k_folds$model == 1, c("aic", "bic", "rmse")])
     model_sum <- summary(m)
-    save(model_sum, file = paste0("~/research-collaboration/question-mark/k_folds_results/mod1_k", k, ".Rdata"))
+    save(model_sum, file = file.path(kfolds_dir, paste0("mod1_k", k, ".Rdata")))
     rm(m); gc()
   }
 
@@ -83,7 +83,7 @@ for (k in 1:10) { # 10 folds
     cat("\n")
     print(k_folds[k_folds$k == k & k_folds$model == 2, c("aic", "bic", "rmse")])
     model_sum <- summary(m)
-    save(model_sum, file = paste0("~/research-collaboration/question-mark/k_folds_results/mod2_k", k, ".Rdata"))
+    save(model_sum, file = file.path(kfolds_dir, paste0("mod2_k", k, ".Rdata")))
     rm(m); gc()
   }
 
@@ -106,7 +106,7 @@ for (k in 1:10) { # 10 folds
     cat("\n")
     print(k_folds[k_folds$k == k & k_folds$model == 3, c("aic", "bic", "rmse")])
     model_sum <- summary(m)
-    save(model_sum, file = paste0("~/research-collaboration/question-mark/k_folds_results/mod3_k", k, ".Rdata"))
+    save(model_sum, file = file.path(kfolds_dir, paste0("mod3_k", k, ".Rdata")))
     rm(m); gc()
   }
 
@@ -129,18 +129,18 @@ for (k in 1:10) { # 10 folds
     cat("\n")
     print(k_folds[k_folds$k == k & k_folds$model == 4, c("aic", "bic", "rmse")])
     model_sum <- summary(m)
-    save(model_sum, file = paste0("~/research-collaboration/question-mark/k_folds_results/mod4_k", k, ".Rdata"))
+    save(model_sum, file = file.path(kfolds_dir, paste0("mod4_k", k, ".Rdata")))
     rm(m); gc()
   }
 
   cat("\nt fold:", k, ": ", difftime(Sys.time(), t_fold), units(difftime(Sys.time(), t_fold)))
   rm(dat_val, dat_fit, p, rmse); gc()
 
-  save(k_folds, file = "~/research-collaboration/question-mark/k_folds_results/k_folds.Rdata")
+  save(k_folds, file = file.path(kfolds_dir, "k_folds.Rdata"))
 }
 
 # Average RMSE per model across folds
-load("~/research-collaboration/question-mark/k_folds_results/k_folds.Rdata")
+load(file.path(kfolds_dir, "k_folds.Rdata"))
 mean(k_folds[k_folds$model == 1, ]$rmse, na.rm = T)
 mean(k_folds[k_folds$model == 2, ]$rmse, na.rm = T)
 mean(k_folds[k_folds$model == 3, ]$rmse, na.rm = T)

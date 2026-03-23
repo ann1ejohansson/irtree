@@ -26,8 +26,8 @@ if(class(mod_tree) != "try-error") {
 
   print(model_comp[model_comp$model == "fully estimated",])
 
-  save(mod_tree, file = "mod_tree.Rdata")
-  save(sum, file = "sum_mod_tree.Rdata")
+  save(mod_tree, file = file.path(models_dir, "mod_tree.Rdata"))
+  save(sum, file = file.path(models_dir, "sum_mod_tree.Rdata"))
   rm(mod_tree); gc()
 } else {
   print("Model estimation failed.")
@@ -52,8 +52,8 @@ if(class(mod_tree_con_item) != "try-error") {
 
   print(model_comp[model_comp$model == "item-constrained",])
 
-  save(mod_tree_con_item, file = "mod_tree_con_item.Rdata")
-  save(sum, file = "sum_mod_tree_con_item.Rdata")
+  save(mod_tree_con_item, file = file.path(models_dir, "mod_tree_con_item.Rdata"))
+  save(sum, file = file.path(models_dir, "sum_mod_tree_con_item.Rdata"))
   rm(mod_tree_con_item); gc()
 } else {
   print("Model estimation failed.")
@@ -78,8 +78,8 @@ if(class(mod_tree_con_person) != "try=error") {
 
   print(model_comp[model_comp$model == "user-constrained",])
 
-  save(mod_tree_con_person, file = "mod_tree_con_person.Rdata")
-  save(sum, file = "sum_mod_tree_con_person.Rdata")
+  save(mod_tree_con_person, file = file.path(models_dir, "mod_tree_con_person.Rdata"))
+  save(sum, file = file.path(models_dir, "sum_mod_tree_con_person.Rdata"))
   rm(mod_tree_con_person); gc()
 } else {
   print("Model estimation failed.")
@@ -104,11 +104,11 @@ if(class(mod_tree_con) != "try-error") {
 
   print(model_comp[model_comp$model == "fully constrained",])
 
-  save(mod_tree_con, file = "mod_tree_con.Rdata")
-  save(sum, file = "sum_mod_tree_con.Rdata")
+  save(mod_tree_con, file = file.path(models_dir, "mod_tree_con.Rdata"))
+  save(sum, file = file.path(models_dir, "sum_mod_tree_con.Rdata"))
   rm(mod_tree_con); gc()
 } else {
   print("Model estimation failed.")
 }
 
-save(model_comp, file = "model_comp.Rdata")
+save(model_comp, file = file.path(models_dir, "model_comp.Rdata"))

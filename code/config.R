@@ -71,14 +71,25 @@ holdout_frac <- 0.1  # proportion of responses held out per fold per node
 random_seed <- 1234
 
 # ============================================================
-# OUTPUT DIRECTORIES
+# DIRECTORY STRUCTURE
 # ============================================================
-results_dir <- "results"
-plots_dir   <- file.path(results_dir, "plots")
-kfolds_dir  <- file.path(results_dir, "k_folds")
-models_dir  <- file.path(results_dir, "models")
+# All directories are created here so any script in the pipeline
+# can be run without manual setup, even on a fresh clone.
+#
+#   code/
+#   ├── data/          simulated or preprocessed data files
+#   └── results/
+#       ├── models/    fitted model objects (irtree_fit.R)
+#       ├── k_folds/   cross-validation results (irtree_kfolds.R)
+#       └── plots/     exported figures (itree_analysis.Rmd)
 
-for (.d in c(results_dir, plots_dir, kfolds_dir, models_dir)) {
+data_dir    <- "data"
+results_dir <- "results"
+models_dir  <- file.path(results_dir, "models")
+kfolds_dir  <- file.path(results_dir, "k_folds")
+plots_dir   <- file.path(results_dir, "plots")
+
+for (.d in c(data_dir, results_dir, models_dir, kfolds_dir, plots_dir)) {
   dir.create(.d, showWarnings = FALSE, recursive = TRUE)
 }
 rm(.d)

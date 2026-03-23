@@ -288,7 +288,6 @@ cat(
 # ============================================================
 # SAVE
 # ============================================================
-dir.create("data", showWarnings = FALSE, recursive = TRUE)
 save(sim_logs, file = data_path)
 cat("\nSaved: sim_logs.Rdata\n")
 cat("Run irtree_prep.R, irtree_fit.R, or irtree_kfolds.R as usual.\n")
