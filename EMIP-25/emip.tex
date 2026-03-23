@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+\documentclass[12pt]{article}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{comment}
@@ -20,12 +20,9 @@
 %\setmainfont{Times New Roman}
 
 % set Times New Roman-style font but stay with pdfLatex compiler 
-%\usepackage{newtxtext}
-%\usepackage{newtxmath}
-\usepackage[scaled]{helvet}
-\renewcommand{\familydefault}{\sfdefault}
-%\usepackage{sansmath}
-%\sansmath
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+
 % For basic formatting
 \usepackage{graphicx}
 \usepackage{amsmath, amssymb}
@@ -91,45 +88,59 @@ ZERO-MATTERS ARGUMENT
 * THEORETICAL PERSPECTIVE: There is a variability issue. Individual differences in use of meta-cognitive strategies and risk-taking behaviors (and possibly others) result in different propensiities for using the netural response option --- given this variability, a unidimensional model will unequally and unfairly estimate ability. 
 --> can also follow this reasoning / order of arguments in discussion 
 
--- Title options -- 
-* From noise to signal: Separating problem-skipping from accuracy in student ability estimation
-* A Problem that Shouldn't be Skipped: Problem Skipping Limits the Accuracy of Ability Estimates in Online Learning
-* [BJET] Accurately tracking learner abilities with non-cognitive variation: Accounting for differences in non-response
-* Non-response ontspoort : Accounting for metacognitive .. in large-scale adaptive systems
+-- Abstract -- 
+core arguments
+* unidimensional models are very powerful for estimating learner proficiency 
+* they are also the foundation of CAT and adaptive learning systems
+* ALSs provide a powerful, low-stakes practice environment which benefits student learning
+* their low-stakes nature require extra design features which help learners stay engaged and motivated, such as skipping a problem (= non-responding)
+* if non-response options are introduced, this can enable several behavioral pathways for a learner on a given item 
+* choice of pathway depends on a learner's meta-cognitive state
+* problem: unidimensional models do not account for meta-cognitive states. 
+* because learners differ in their meta-cogntive dispositions, and response options may elicit different behaviors, the measurement of learner proficiency may be conflated with the learners 'meta-cognitive ability'
+* we model an IRTree to separate cognitive ability from meta-cognitive ability (in this paper, in the form of problem-skipping). 
 
-* What Skipping Tells Us: Non-Response, Metacognition, and Fairness in Adaptive Educational Technology
-* ... Meta-cognitive dynamics in adaptive learning
-* A problem that shouldnt be skipped: modeling non-response in adaptive educational technology 
-* ...: Separating Ability From Non-Response in Adaptive Educational Technology
+Outline
+* Adaptive learning systems rely on accurate and fair assessment of student abilities to ensure optimal learning conditions.
+* Importantly, nonresponse is often a design feature and bias gets amplified.
+* if non-response options are introduced, this can enable several behavioral pathways for a learner on a given item 
+* choice of pathway depends on a learner's meta-cognitive state
+* problem: unidimensional models do not account for meta-cognitive states. 
+* because learners differ in their meta-cogntive dispositions, and response options may elicit different behaviors, the measurement of learner proficiency may be conflated with the learners 'meta-cognitive ability'
+* Method \& Result: we model an IRTree to separate cognitive ability from meta-cognitive ability (in this paper, in the form of problem-skipping). 
+* Conclusion: From a measurement perspective, this requires a balance between powerful unidimensional approaches versus more complex models that can also capture individual differences in non-response processes. We give suggestions.
 
-* The Problem with Skipping Problems: Separating Cognitive From Metacognitive Dynamics in Adaptive Educational Technology
-* What's the Problem with Problem-Skipping? Separating Cognitive From Metacognitive Dynamics in Adaptive Learning Systems
+Drafts
+%[EM:IP] In education, unidimensional measurement models have proven to be exceptionally powerful. By balancing psychometric rigor with practical usability, they underpin many large-scale assessments, high-stakes decisions, and adaptive testing and practice algorithms. However, this balance entails a trade-off that can have real consequences, particularly in adaptive learning settings where measurement and instructional decisions occur in rapid, continuous cycles. In this context, we show that meta-cognitive abilities can play a crucial role and should not be ignored, as they may amplify biased measurement. Specifically, we examine how problem-skipping behavior systematically affects measurement and the subsequent decisions based on it.
 
--> my current top title contenders :-) 
-* When Learners Skip a Problem: Separating Cognitive From Metacognitive Dynamics in Adaptive Learning Systems
-* When Learners Skip a Problem: Disentangling Ability and Non-response in Adaptive Learning Systems 
+%Large-scale personalized learning systems rely on accurate and fair student ability estimations, yet common unidimensional models often neglect meta-cognitive processes. As such, they can provide biased estimates that put a limit on accuracy and fairness. This study introduces a multidimensional approach using the IRTree framework, which models problem-skipping as a distinct latent trait alongside accuracy. Problem-skipping is a common meta-cognitive manifestation that can reflect self-regulation and strategic decision-making. Our results demonstrate that problem-skipping reflects meaningful individual differences, with patterns of problem-skipping varying in their impact on performance. Notably, while frequent problem-skipping was associated with lower accuracy, it also revealed adaptive strategies for some learners. This suggests that problem-skipping is signal, not noise. To ensure that learning analytic tools are supported by accurate and fair measurement models, we suggest several ways to account for problem-skipping when estimating student ability.
+%In reality, however, individuals differ in their propensity to use meta-cognitive strategies, thus conflating estimates of cognitive ability. 
+%Adaptive learning systems rely on accurate and fair assessment of student abilities to ensure optimal learning conditions. On the other hand, to keep learners engaged, they allow for different types of non-responding. From a measurement perspective, this requires a balance between powerful unidimensional approaches versus more complex models that can also capture individual differences in non-response processes. This balance entails a trade-off that can have real consequences, particularly in adaptive learning settings where measurement and instructional decisions occur in rapid, continuous cycles. In this context, we show that meta-cognitive abilities can play a crucial role and should not be ignored, as they may amplify biased measurement. Specifically, using a large dataset from a K12 adaptive learning system, we examine how problem-skipping behavior systematically affects measurement and the subsequent decisions based on it.
 
-17/03/2026 - alt. introduction outline
-* general introduction 
-    * 0.1 we see problem-skipping in ALS; zero matters argument in short
-    * 0.2 this complicates measurement because most models are unidimensional 
-* section 1: problem-skipping and evidence of it as a separate latent trait 
-    * 1.1 introducing problem-skipping is a design consideration (positive, but also assumes some association to proficiency)
-    * 1.2 previous lit problem-skipping <-> task-proficiency 
-    * 1.3 metacognition 
-* section 2: measurement consequences 
-    * unidimensional models power adaptivity 
-    * problem-skipping threatens unidimensionality and may introduce bias 
-    * previous lit bias
-* section 3: aims & research questions
-    * modeling problem-skipping as separate latent trait necessary
-    * done previously in pen-and-paper testing (cite previous lit)
-    * research gap: unclear whether multidimensional structure appears in adaptive learning, where problem-skipping is embedded in design 
-    * state rqs
-    * implications (fairness / accuracy)
+%Unidimensional measurement models are a powerful tool for estimating learner proficiency in educational settings. Thanks to their psychometric rigor and practical usability, they have become foundational for large-scale adaptive learning systems. However, to maintain engagement and motivation during practice, many adaptive learning systems utilize non-response options. While beneficial for the learner experience, these options may come at a cost, b
+
 \end{comment}
 
+
 \begin{document} 
+
+%\title{From noise to signal: Separating problem-skipping from accuracy in student ability estimation}
+%\title{A Problem that Shouldn't be Skipped: Problem Skipping Limits the Accuracy of Ability Estimates in Online Learning}
+
+% [BJET] Accurately tracking learner abilities with non-cognitive variation: Accounting for differences in non-response
+% Non-response ontspoort : Accounting for metacognitive .. in large-scale adaptive systems
+
+% What Skipping Tells Us: Non-Response, Metacognition, and Fairness in Adaptive Educational Technology
+% Meta-cognitive dynamics in adaptive learning
+% A problem that shouldnt be skipped: modeling non-response in adaptive educational technology 
+% ...: Separating Ability From Non-Response in Adaptive Educational Technology
+
+% The Problem with Skipping Problems: Separating Cognitive From Metacognitive Dynamics in Adaptive Educational Technology
+% What's the Problem with Problem-Skipping? Separating Cognitive From Metacognitive Dynamics in Adaptive Learning Systems
+
+%% my current top title contenders :-) 
+% When Learners Skip a Problem: Separating Cognitive From Metacognitive Dynamics in Adaptive Learning Systems
+% When Learners Skip a Problem: Disentangling Ability and Non-response in Adaptive Learning Systems 
 
 
 \title{When Learners Skip a Problem: Disentangling Ability and Non-Response in Adaptive Learning Systems}
@@ -164,45 +175,45 @@ ZERO-MATTERS ARGUMENT
 %- educational technology platforms need to consider how to account for metacognitive dynamics while ensuring robust estimates of cognitive abilities. we suggest several ways to deal with this trade-off.
 
 %% refined
-Online learning systems often experience significant non-response, such as skipping problems. This behavior is often intentionally permitted to sustain motivation, enable self-regulation, and bypass poorly matched problems in adaptive learning systems. However, offering explicit options for non-response can have desirable and undesirable metacognitive effects, ranging from self-regulation to effort avoidance or gaming the system. Importantly, these metacognitive effects may invalidate the unidimensionality assumption underlying some measurement models in adaptive systems. This can limit the accuracy and fairness of ability estimates, ultimately lowering the system's effectiveness.
-
-Student learning behavior reflects not only cognitive ability, but also metacognitive regulation---how learners monitor and manage their own learning. This is particularly relevant in adaptive educational technology platforms, which often allow for different types of non-responding, such as skipping a problem. Commonly, these options are an intentional design choice to sustain engagement. While such features can be beneficial for motivation, the non-response patterns it induces may also introduce metacognitive dynamics that threaten the assumption of unidimensionality underlying educational measurement models. This has consequences for the accuracy and fairness of ability estimates, and these risks may be amplified by the continuous updating of estimates that underpin adaptive systems. In this study, we apply a tree-based item response model to disentangle cognitive ability from non-responding behavior, using data from over \num{3500} learners from a large-scale K-12 adaptive learning platform. We find that ability and non-responding are moderately correlated, but distinguishable latent traits, confirming that non-responding should not be ignored when estimating learner ability. These results highlight a core tension in adaptive educational technology design: powerful unidimensional models offer practical efficiency, but more complex models may be needed to capture individual differences in metacognitive processes. We discuss implications for both measurement practice and platform design, and propose several ways to navigate this trade-off. 
+Student learning behavior reflects not only cognitive ability, but also metacognitive regulation---how learners monitor and manage their own learning. This is particularly relevant in adaptive educational technology platforms, which often allow for different types of non-responding, such as skipping a problem. Commonly, these options are an intentional design choice to sustain engagement. While such features can be beneficial for motivation, the non-response patterns it induces may also introduce metacognitive dynamics that threaten the assumption of unidimensionality underlying most educational measurement models. This has consequences for the accuracy and fairness of ability estimates, and these risks may be amplified by the continuous updating of estimates that underpin adaptive systems. %This has consequences for the accuracy and fairness of ability estimates, which threaten to be further compounded by the continuous updating of estimates that drives adaptivity. 
+In this study, we apply a tree-based item response model to disentangle cognitive ability from non-responding behavior, using data from over \num{3500} learners from a large-scale K-12 adaptive learning platform. We find that ability and non-responding are moderately correlated, but distinguishable latent traits, confirming that non-responding should not be ignored when estimating learner ability. These results highlight a core tension in adaptive educational technology design: powerful unidimensional models offer practical efficiency, but more complex models may be needed to capture individual differences in metacognitive processes. We discuss implications for both measurement practice and platform design, and propose several ways to navigate this trade-off. 
  
 \end{abstract}
 
 \paragraph{Keywords}
 adaptive learning, learner performance modeling, problem-skipping, item response tree, K-12 education, fairness
-\newpage 
 
 \section{Introduction}
-%%% Suggestions Alexander
-
-% 1. Problem setting (one or two paragraphs, this should set the broader BJET tone for the article)
-% - Set importance: One of the main promises of large-scale online learning systems is personalization. There are now many such systems used by many users worldwide. Unidimensional models have shown to be promising for reason a b c.
-% - Empirical fact/phenomenon: Online learning systems often exhibit significant non-response (few quick refs).
-% - Causes: Intentional option for this with good reasons (name them and ref).
-% - Consequences for student behavior: Enables additional metacognitive strategies, both desirable and undesirable.
-% - Consequences for measurement/personalization: metacognitive behavior can be a direct threat to the promise of accurate personalization, affecting those many users.
-
 % plan-- BJET: write a general introduction here, set up the premise of the paper
 % - explain adaptive learning platforms
 % - explain how they rely on ability estimates (require continuous measure of ability)
 % - introduce design choice that creates the problem 
 
+% [§0.1 - BJET]
 Adaptive learning technologies are increasingly used to support personalized instruction in digital learning environments. By continuously adjusting the difficulty of tasks to match a learner's current level of understanding, such systems aim to provide practice that is neither too easy nor too difficult. To accomplish this, adaptive platforms rely on statistical models that estimate a learner's current proficiency based on their observed performance during practice. Statistical models continuously update these ability estimates, which simultaneously guide the selection of subsequent tasks. Consequently, the accuracy of these models directly affects how effectively instruction can be personalized.
 
+% [§0.2 - BJET]
 % Design choice -- many systems offer alternative response options, introduces alt behavioral pathways etc etc. 
-% End this par with problem statement 
+% End this par with problem statement (most can be moved from §1.3 EM:IP)
 At the same time, many digital learning environments offer response options beyond simply answering a question. Learners may request hints, skip items, or indicate that they do not know the answer. Such options are often included to support productive learning strategies, reduce frustration, or maintain engagement during practice. However, they also introduce multiple behavioral pathways through which learners can interact with a task. When learners choose to skip a problem or request help rather than attempt a response, their behavior may reflect metacognitive regulation, strategic effort allocation, or disengagement rather than task proficiency alone. This raises an important question for adaptive learning systems: should such behaviors be interpreted separately from learner ability? 
 
+% [§1.1 - BJET]
 \subsection{Unidimensional measurement models}
 Adaptive learning systems estimate learner proficiency from response data using statistical measurement models such as item response theory (IRT) and Bayesian knowledge tracing (BKT). Although these frameworks differ in their formulation, they share a common assumption: observable performance is driven by a single latent dimension representing task proficiency. Such unidimensional measurement models have fundamentally transformed educational measurement in practice. They offer a parsimonious and interpretable framework for representing student proficiency~\parencite{rasch1993probabilistic, hambleton1991fundamentals, embretson2013item, de2013theory} and under adequate model fit, they enable the comparison of individuals' ability regardless of which specific items from a calibration pool that these students respond to~\parencite{rasch1993probabilistic, wright1982rating}. This ability has been ground-breaking for large-scale assessment~\parencite{lord2012applications, van2010elements}. With these tools, educators and test constructors can identify poorly functioning items while maintaining robustness against, for example, missing data~\parencite{mislevy1996missing, de2013theory}.  
 
+% [§1.1 - EM:IP]
+%Unidimensional measurement models, such as the Rasch model and closely related item response theory (IRT) formulations, have fundamentally transformed educational measurement in practice. They offer a parsimonious and interpretable framework for representing student proficiency~\parencite{rasch1993probabilistic, hambleton1991fundamentals, embretson2013item, de2013theory} and under adequate model fit, they enable the comparison of individuals' ability regardless of which specific items from a calibration pool that these students respond to~\parencite{rasch1993probabilistic, wright1982rating}. This ability has been ground-breaking for large-scale assessment~\parencite{lord2012applications, van2010elements}. With these tools, educators and test constructors can identify poorly functioning items while maintaining robustness against, for example, missing data~\parencite{mislevy1996missing, de2013theory}.  
+
+% [§1.2 - shared]
 These advantageous properties have made unidimensional models the backbone of computerized adaptive testing and practice systems, which rely on a single proficiency scale to dynamically match learners to appropriately targeted items~\parencite{weiss1982improving, van2010elements, magis2017computerized}. In instructional contexts, this common metric enables teachers to monitor progress over time, manage mastery, and interpret student performance relative to item difficulties~\parencite{corbett1995knowledge, maris2012speed, deonovic2018learning, saric-grgic2024twenty-five}. Likewise, at the curriculum level, psychometric modeling supports evidence-centered refinement of learning objectives~\parencite{mislevy1996missing, glaser2001knowing}. For students, adaptive learning systems can successfully align task difficulty with estimated proficiency, and their use is associated with improved learning efficiency and sustained engagement~\parencite{eggen2006optimal, ma2014intelligent, van2010elements}. 
 
+% [§1.3 BJET -- needs to be rewritten to correspond with intro section]
 Although adaptive learning systems built on these unidimensional approaches appear powerful for education, their advantages rest on a critical assumption: observable performance is driven by a single latent dimension. Under this assumption, all observable outcomes are treated as manifestations of the same underlying ability, effectively collapsing multiple learning processes into a single scale. If response behaviors are driven by processes other than proficiency, unidimensional models may conflate distinct sources of variability, potentially biasing both person and item estimates. For example, when learners have the option to skip a question, one student may skip because they correctly judge that they do not know the answer, whereas another may skip simply to avoid the effort of responding. If the measurement model treats these behaviors as equivalent indicators of proficiency, differences in strategic behavior may become embedded in the estimated ability parameter. Over time, systematic differences in the use of the skip option could therefore bias ability estimates. In this paper, we examine this fundamental measurement question for adaptive learning systems: does non-responding represent noise around ability, or signal a distinct latent process that should be modeled separately? 
 
-\subsection{Non-responding: A Meta-Cognitive Perspective} % interpretation? view? perspective? explanation? 
+% [§1.3 EM:IP]
+% Although adaptive learning systems built on these unidimensional approaches appear powerful for education, their advantages rest on a critical assumption: observable performance is driven by a single latent dimension. Learning platforms often offer options beyond simply answering a question correctly or incorrectly, such as requesting hints or skipping items. These features are necessary for engagement and motivation, but also introduce additional behavioral pathways that may reflect metacognitive regulation, strategic effort allocation, or disengagement rather than true task proficiency. Unidimensional models treat all observable outcomes as manifestations of the same underlying ability, thus statistically collapsing all learning processes into a single scale. When such behaviors are driven by processes other than proficiency, unidimensional models may conflate distinct sources of variability, potentially biasing both person and item estimates. For example, when learners have the option to skip a question, one student may skip because they correctly judge that they do not know the answer, whereas another may skip simply to avoid the effort of responding. If the measurement model treats these behaviors as equivalent indicators of proficiency, differences in strategic behavior may become embedded in the estimated ability parameter. Over time, systematic differences in the use of the skip option could therefore bias ability estimates. In this paper, we examine this fundamental measurement question for adaptive learning systems: does non-responding represent noise around ability, or signal a distinct latent process that should be modeled separately? 
+
+\subsection{A metacognitive interpretation of non-responding} % interpretation? view? perspective? explanation? 
 %\subsection{Psychometrics meets metacognition: Why non-responding matters} 
 % set up the link with metacognition
 When faced with an online educational exercise, for example answering the multiplication problem ``3 $\times$ 4'', a student must decide whether and how to respond. This decision involves monitoring one's knowledge state (\textit{e.g.,} "Do I know the answer?"), evaluating potential outcomes (\textit{e.g.,} "What happens if I answer incorrectly?"), and regulating effort allocation (\textit{e.g.,} "Is this worth attempting?"). Such processes fall under the umbrella of metacognition, which involves the monitoring and regulation of cognition during learning~\parencite{winne2017cognition}. Importantly, this regulation may result in the decision not to answer the exercise at all for some learners while others would attempt to answer the items. While metacognition has been shown to play a role for successful learning in offline~\parencite{rabinowitz2017nteraction, fleur2021metacognition, colantonio2024predicting} and online~\parencite{zhao2020time, kim2009not, fidan2024emotions, shields2024active} settings, it is clearly not reducible to proficiency alone. Thus, non-responding is not merely an absence of performance --- it is an observable trace of monitoring and regulation. In this sense, "zero matters"~\parencite[p.~2]{van2025statistical}. 
@@ -214,6 +225,9 @@ The extent to which meta-cognitive tools are used differs across learners, as a 
 % [§2.3 BJET Practical perspective]
 Non-responding is not only driven by individual responding behavior but it is also structurally embedded in the design of many adaptive learning systems~\parencite{corbett1995knowledge, aleven2000limitations, vanlehn2011relative, roll2015understanding}. When a platform deliberately offers a non-response option, it actively shapes the behavioral space in which learners engage. Such a design choice carries implicit measurement assumptions about what type of information about the learner that the non-response behavior holds (for instance, when learners' ability estimates are not affected by problem-skipping, there is an implicit assumption that skipping a problem carries no information about ability). Yet, as the individual differences reviewed above suggest, this assumption is unlikely to hold uniformly across learners. This ambiguity is further amplified by the adaptive nature of the system itself, which continuously updates ability estimates and uses them to select subsequent items~\parencite{van2010elements}. If non-responding is conflated with proficiency in this feedback loop, the ability estimate may systematically misguide learners by selecting items in the wrong difficulty range, which in turn generates further distorted response patterns. 
 The design of the learning system thus plays a vital role in shaping metacognitive behaviors---these are not only driven by individual differences, but also conditioned and amplified over time by design. % reformulate closing sentence: design and individual differences go hand in hand -- and are amplified by adaptive nature. 
+
+% [§2.3 EM:IP Practical perspective]
+%Non-responding is not only meaningful at the individual level; it is also structurally embedded in the design of many adaptive learning systems. In addition to selecting an answer, learners are often given alternative response options such as skipping an item, requesting hints, indicating uncertainty, or making partial attempts~\parencite{corbett1995knowledge, aleven2000limitations, vanlehn2011relative, roll2015understanding}. These features are usually introduced to support productive learning processes, for example by reducing unproductive guessing, scaffolding help-seeking, or allowing learners to regulate effort and difficulty. At the same time, the presence of such options introduces multiple behavioral pathways through which learners can interact with an item and in doing so, complicate the interpretation of non responses. This raises an important design and measurement question: when a learning platform offers a neutral response option, can the resulting non-response be treated as negligible, or as equivalent to learner proficiency?
 
 %* STATISTICAL PERSPECTIVE: There is a modeling issue. Unidimensional models contain bias in measurement if different abilities exist. 
 The handling of a non-response is also a statistical question. In many measurement models, non-responses are either ignored or treated as incorrect responses. Ignoring non-responses relies on the assumption that missingness is random, \textit{i.e.,} the response is missing-at-random (MAR). Under this assumption, the probability of a non-response does not depend on the unobserved response value, conditional on the observed data~\parencite{rubin1976inference}. Alternatively, treating a non-response as incorrect assumes that the processes leading to non-response and incorrect responses are governed by the same latent trait, such as proficiency. Given variability in the behavioral pathways induced by non-response options and learners’ individual differences in metacognitive regulation, it is likely that non-responding depends, at least partly, on processes other than the target latent trait. In such cases, the missingness mechanism becomes non-ignorable, \textit{i.e.,} missing-not-at-random (MNAR), and collapsing non-responses into a single latent trait estimate may introduce bias in measurement. Addressing this issue may therefore require modeling non-response behavior as a distinct latent process alongside proficiency~\parencite{little2019statistical}. Whether this distinction holds in the specific context of adaptive learning platforms---where non-response options are intentionally designed into the system---remains an open empirical question.
@@ -230,7 +244,6 @@ If non-response behavior reflects processes beyond proficiency, treating these r
 Applications of IRTree models in educational assessment have provided evidence that non-responding and proficiency may represent distinct processes. Simulation studies show that unidimensional models produce biased person and item parameters when responses are MNAR, whereas explicitly modeling the missingness mechanism with an IRTree model substantially reduces this bias \parencite{debeer2017modeling}. Empirical studies of PISA reading assessments in Argentina \parencite{debeer2017modeling} and Japan \parencite{okumura2014empirical}, as well as studies of reading and mathematics competence among German fifth-grade students \parencite{pohl2014dealing}, found that the propensity to skip an item was negatively related to performance and that IRTree models provided a better fit than standard IRT models. These results indicate that non-responses in educational assessments may reflect processes distinct from proficiency.
 
 IRTree models have also been applied to online learning data to account for behavioral processes such as the speed–accuracy trade-off in ability estimation \parencite{coomans2016distinguishing, hofman2018fast}. However, these applications did not consider problem-skipping behavior. Consequently, most existing work on skipping has been conducted in traditional testing contexts. Whether similar multidimensional structures arise in adaptive learning environments---where skipping and help-seeking are embedded in platform design---remains largely unexplored. 
-
 
 \subsection{Multidimensional solution}
 IRTree models present one approach to modeling non-responses in an educational context. In specific, the model treat the interaction for a learner on a given item as a two-stage decision process: first, the item is either responded to or not, and second, \textit{given that the item was responded to}, the response is correct or incorrect. This process can be visualized as a tree-branching model with two nodes (Figure \ref{fig:tree}), and the response of person $p$ on item $i$ can be coded as two binary variables, $Y^{(1)}$ and $Y^{(2)}$, where 
