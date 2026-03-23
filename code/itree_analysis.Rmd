@@ -1,0 +1,406 @@
+---
+title: "question_mark"
+author: "Annie Johansson"
+date: "2024-08-15"
+output: html_document
+---
+
+```{r Set-up, include=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(lme4)
+library(lmtest)
+library(ggplot2)
+library(data.table)
+library(DescTools)
+library(ggExtra)
+library(cowplot)
+
+# plotting tools
+colors = c("grey40", "tomato3", "turquoise4", "tan2")
+export_pdf <- function(plot_object, height = 10, width = 12, name = deparse(substitute(plot_object))) {
+  # !! need to end the file name with a / !!
+  pdf(file = paste0("~/research-collaboration/question-mark/results_11022025/plots/", name, ".pdf"),
+      height = height,
+      width = width,
+      bg = "white")
+  print(plot_object)
+  dev.off()
+}
+```
+
+
+# Load data
+
+```{r}
+# check differences in qm between raw and cleaned dataset
+
+load("~/research-collaboration/question-mark/new data/logs_all.Rdata")
+source("~/research-collaboration/question-mark/irtree_prep.R")
+
+dt <- as.data.table(logs_all)
+rm(logs_all)
+dt[answer == "¿", question_mark := 1]
+dt[answer != "¿", question_mark := 0]
+dt[, response := ifelse(question_mark == 1, "qm", ifelse(correct_answered == 0, "error", "correct"))]
+table(dt$response)
+
+dat_irt[answer == "¿", question_mark := 1]
+dat_irt[answer != "¿", question_mark := 0]
+dat_irt[, response := ifelse(question_mark == 1, "qm", ifelse(correct_answered == 0, "error", "correct"))]
+table(dat_irt$response)
+
+dt[, in_sub := user_id %in% dat_irt[, unique(user_id)]]
+ggplot(dt[, .(mean_qm = mean(question_mark)), .(in_sub, user_id)]) +
+  geom_histogram(aes(x = mean_qm,), bins = 50) +
+  facet_wrap(~in_sub, scales = "free") +
+  theme_bw()
+
+dt[, mean(question_mark), in_sub]
+dat_irt[, mean(q)]
+
+# clean up grade
+dt <- dt[grade > 2 & grade < 9]
+```
+
+# Descriptives
+## Raw data: N qm per diff level
+```{r}
+dt[, diff_factor := factor(difficulty, levels = (0:2), labels = c("Easy", "Medium", "Hard"))]
+dt_diff <- dt[, .(mean_qm = mean(question_mark),
+                  sd_qm = sd(question_mark), 
+                  ci_l = t.test(question_mark)$conf.int[1], 
+                  ci_u = t.test(question_mark)$conf.int[2]), diff_factor]
+dt_diff
+
+ggplot(dt_diff, aes(x = diff_factor, y = mean_qm)) +
+  geom_bar(stat = "identity", fill = "gray") +
+  geom_errorbar(aes(ymin = ci_l, ymax = ci_u), color = "gray30", width = 0.1) +
+  labs(x = "Difficulty Level", y = "Proportion QM Response") +
+  theme_bw() +
+    theme(
+    text = element_text(size = 14)
+  )
+  
+```
+
+## Raw data: N qm per grade
+
+```{r}
+dt_grade <- dt[, .(mean_qm = mean(question_mark),
+                   sd_qm = sd(question_mark),
+                  ci_l = t.test(question_mark)$conf.int[1], 
+                  ci_u = t.test(question_mark)$conf.int[2]), .(grade)][order(grade)]
+dt_grade$grade <- factor(dt_grade$grade, levels = c(3:8))
+dt_grade
+ggplot(dt_grade, aes(x = grade, y = mean_qm)) +
+  geom_path(group = 1, color = "gray") +
+  geom_errorbar(aes(ymin = ci_l, ymax = ci_u), color = "gray30", width = 0.1) +
+  labs(x = "Grade", y = "Proportion QM Response") +
+  theme_bw() +
+  theme(
+    text = element_text(size = 14)
+  )
+  
+```
+
+## Raw data: N qm per diff level and graade
+
+```{r}
+dt_grade_diff <- dt[, .(mean_qm = mean(question_mark),
+                  ci_l = t.test(question_mark)$conf.int[1], 
+                  ci_u = t.test(question_mark)$conf.int[2]), .(grade, difficulty = diff_factor)][order(grade, difficulty)]
+dt_grade_diff$grade <- factor(dt_grade_diff$grade, levels = c(3:8))
+
+ggplot(dt_grade_diff, aes(x = grade, y = mean_qm, fill = difficulty, group = difficulty, color = difficulty)) +
+  geom_ribbon(aes(ymin = ci_l, ymax = ci_u), color = NA, alpha = 0.3, width = 0.1) +
+  geom_path(linewidth = 1) +
+  scale_discrete_manual(aesthetics = c("fill", "color"), values = colors[c(3, 4, 2)], name = "Difficulty Level") +
+  labs(x = "Grade", y = "Proportion QM Response") +
+  theme_bw() +
+    theme(
+    text = element_text(size = 14)
+  )
+```
+
+## Response freq. over rt
+
+```{r}
+dt[, t := round(response_in_milliseconds/1000, 1)]
+
+library(DescTools)
+dt_t <- dt[t < 20, Freq(response), t][order(t)]
+time_plot <- ggplot(dt_t, aes(x = t, y = perc, group = level, color = level)) +
+  geom_line(linewidth = 1) +
+  geom_point(aes(size = freq), alpha = 0.6) +
+  scale_discrete_manual(aesthetics = c("fill", "color"), values = colors[c(1, 2, 4)], name = "Response", labels = c("Correct", "Error", "Question Mark")) +
+  geom_vline(xintercept = 20, linetype = "dotted" ) +
+  labs(x = "Response Time", y = "Probability of Response", size = "Frequency") +
+  theme_bw() +
+    theme(
+    text = element_text(size = 14)
+  )
+time_plot
+
+# Add a histogram of rt to the background of the line plot
+time_plot_dist <- ggplot() +
+  geom_histogram(data = dt[t <= 21], aes(x = t, y = ..density..), bins = 50, color = "gray", fill = "gray", alpha = 0.4) +
+  geom_line(data = dt_t, aes(x = t, y = perc, group = level, color = level), linewidth = 1, alpha = 0.6) +
+  geom_point(data = dt_t, aes(x = t, y = perc, group = level, color = level, size = freq), alpha = 0.4) +
+  scale_discrete_manual(aesthetics = c("fill", "color"), values = colors[c(1, 2, 4)], name = "Response", labels = c("Correct", "Error", "Question Mark")) +
+  geom_vline(xintercept = 20, linetype = "dotted") +
+  labs(x = "Response Time", y = "Probability of Response", size = "Frequency") +
+  theme_bw() +
+  theme(
+    text = element_text(size = 14)
+  )
+
+time_plot_dist
+```
+
+## Resp freq. over session count
+
+```{r}
+dt_session <- dt[new_user_domain_modified_count > 0 & new_user_domain_modified_count <= 250, .(mean_qm = mean(question_mark),
+                  ci_l = t.test(question_mark)$conf.int[1], 
+                  ci_u = t.test(question_mark)$conf.int[2], .N), new_user_domain_modified_count][order(new_user_domain_modified_count)]
+
+ggplot(dt_session, aes(x = new_user_domain_modified_count, y = mean_qm)) +
+  geom_ribbon(aes(ymin = ci_l, ymax = ci_u), alpha = 0.6, fill = colors[4]) +
+  geom_path(group = 1, color = colors[4]) +
+  geom_point(aes(size = N), color = colors[4], alpha = 0.6) +
+  theme_bw() +
+    theme(
+    text = element_text(size = 14)
+  )
+
+dt_session <- dt[new_user_domain_modified_count > 0 & new_user_domain_modified_count < 100, Freq(response), new_user_domain_modified_count][order(new_user_domain_modified_count)]
+ggplot(dt_session[level != "correct"], aes(x = new_user_domain_modified_count, y = perc, group = level, color = level)) +
+  geom_line(linewidth = 1) +
+  geom_point(aes(size = freq), alpha = 0.6) +
+  scale_discrete_manual(aesthetics = c("fill", "color"), values = colors[c(2, 4)], name = "Response", labels = c("Error", "Question Mark")) +
+  labs(x = "Session Count", y = "Probability of Response", size = "Frequency") +
+  scale_x_continuous(breaks = c(1, 25, 50, 75, 100), limits = c(1, 100)) +
+  theme_bw() +
+    theme(
+    text = element_text(size = 14)
+  )
+
+```
+
+# Model analysis
+
+## Load tree model
+```{r}
+load("~/research-collaboration/question-mark/results_11022025/mod_tree.Rdata")
+load("~/research-collaboration/question-mark/results_11022025/sum_mod_tree.Rdata")
+```
+
+## Fixed effects
+
+```{r}
+int <- sum$coefficients[1]
+1 / (1 + exp(-int))
+
+```
+
+
+## Inspect random effects
+
+```{r, eval = FALSE}
+ranefs_mod <- ranef(mod_tree)
+# save(ranefs_mod, file = "ranefs_mod.Rdata")
+# load("ranefs_mod.Rdata")
+hist(plogis(ranefs_mod$user_id[,1]), breaks = 50, main = "Distribution of random user effects, node 1")
+hist(plogis(ranefs_mod$user_id[,2]), breaks = 50,main = "Distribution of random user effects, node 2")
+plot(plogis(ranefs_mod$user_id[,1]), plogis(ranefs_mod$user_id[,2]), xlab = "Random user effects, node 1", ylab = "Random user effects, node 2")
+
+hist(plogis(ranefs_mod$item_id[,1]), breaks = 50, main = "Distribution of random item effects, node 1")
+hist(plogis(ranefs_mod$item_id[,2]), breaks = 50,main = "Distribution of random item effects, node 2")
+plot(plogis(ranefs_mod$item_id[,1]), plogis(ranefs_mod$item_id[,2]), xlab = "Random item effects, node 1", ylab = "Random item effects, node 2")
+```
+
+## Extract random effects
+
+```{r}
+ranef_user_node1 <- ranefs_mod$user_id[,1]
+ranef_user_node2 <- ranefs_mod$user_id[,2]
+
+ranef_item_node1 <- ranefs_mod$item_id[,1]
+ranef_item_node2 <- ranefs_mod$item_id[,2]
+
+ranefs <- data.frame(node = factor(c(rep(c(1, 2), each = length(ranef_user_node1)), rep(c(1, 2), each = length(ranef_item_node1)))),
+                     estimate = c(rep("user", times = length(ranef_user_node1)*2), rep("item", times = length(ranef_item_node1)*2)),
+                     id = c(rep(rownames(ranefs_mod$user_id), 2), rep(rownames(ranefs_mod$item_id), 2)),
+                     # values are converted to probabilities
+                     value = c(ranef_user_node1, ranef_user_node2, ranef_item_node1, ranef_item_node2))
+rm(ranef_user_node1, ranef_user_node2, ranef_item_node1, ranef_item_node2)
+# save(ranefs, file = "ranefs_df.Rdata")
+# load("ranefs_df.Rdata")
+```
+
+## Plot distribution of random effects 
+
+```{r}
+ggplot(ranefs, aes(x = value, fill = node, color = node)) +
+  geom_density(alpha = 0.7) +
+  scale_discrete_manual(aesthetics = c("fill", "color"), values = c("tan1", "steelblue")) +
+  facet_grid(node~estimate) +
+  theme_bw()
+```
+
+## Plot correlation between random effects
+
+```{r}
+cor_plot_user <- ranefs %>%
+  filter(estimate == "user") %>%
+  pivot_wider(names_from = node, values_from = value) %>% 
+  ggplot(aes(x = `1`, y = `2`)) + 
+  geom_point(color = "gray", alpha = 0.3) +
+  geom_smooth(method = "lm", color = "tan2", fill = "tan2") +
+  labs(x = "Node 1", y = "Node 2") +
+  theme_bw() +
+  theme(legend.position = "none", text = element_text(size = 12))
+
+cor_plot_item <- ranefs %>%
+  filter(estimate == "item") %>% 
+  pivot_wider(names_from = node, values_from = value) %>% 
+  ggplot(aes(x = `1`, y = `2`)) +
+  geom_point(color = "gray", alpha = 0.3) +
+  geom_smooth(method = "lm", color = "tomato3", fill = "tomato3") +
+  labs(x = "Node 1", y = "Node 2") +
+  theme_bw() +
+  theme(legend.position = "none", text = element_text(size = 12))
+
+# add marginal dist
+cor_plot_item_marginal <- ggMarginal(cor_plot_item + labs(x = "Item Skipping Threshold", y = "Item Difficulty"), 
+                                     type = "density", fill = "tomato3", alpha = 0.4, color = "tomato3")
+cor_plot_user_marginal <- ggMarginal(cor_plot_user + labs(x = "User Propensity to Skip an Item", y = "User Propensity for Incorrect Response"), 
+                                     type = "density", fill = "tan2", alpha = 0.4, color = "tan2")
+
+combined_plot <- plot_grid(cor_plot_item_marginal, 
+                           cor_plot_user_marginal, 
+                           ncol = 2)
+rm(cor_plot_item, cor_plot_item_marginal, cor_plot_user_marginal)
+combined_plot
+export_pdf(combined_plot, height = 4, width = 6)
+```
+
+
+## Individual response patterns
+
+```{r }
+#load("ranefs_mod.Rdata")
+#load("logs_clean.Rdata")
+
+df_user <- data.frame()
+ind_plots <- list()
+labels <- LETTERS[1:8]  
+label_index <- 1       
+
+for (i in 1:4) {
+  # set boundary for which areas of correlation plot to sample from 
+  # upper right, lower right, lower left, upper left
+  min_node1 <- c(1, 1, -4, -4)[i]
+  max_node1 <- c(6, 6, -1, 0)[i]
+  min_node2 <- c(1.5, -2, -2, 1)[i]
+  max_node2 <- c(4, 0, 0, 4)[i]
+  
+  # sample 2 users per quadrant
+  set.seed(121103961)
+  users <- sample(as.numeric(rownames(ranefs_mod$user_id[which(
+    ranefs_mod$user_id$`factor(node)1` > min_node1 &
+    ranefs_mod$user_id$`factor(node)1` < max_node1 & 
+    ranefs_mod$user_id$`factor(node)2` > min_node2 & 
+    ranefs_mod$user_id$`factor(node)2` < max_node2),])), 2)
+  
+  # assign labels to sampled users
+  user_labels <- labels[label_index:(label_index + 1)]
+  label_index <- label_index + 2
+  
+  # add user data and labels for the correlation plot
+  df_user <- rbind(
+    df_user,
+    data.frame(
+      id = users,
+      label = user_labels
+    )
+  )
+  
+  # prepare data for individual user response time plots
+  dat_sub <- logs_clean[logs_clean$user_id %in% users, ]
+  dat_sub$response_new <- ifelse(dat_sub$q == 1, "Question Mark", ifelse(dat_sub$correct_answered == 0, "Error", "Correct"))
+  dat_sub <- dat_sub[order(dat_sub$id), ]
+  dat_sub$item_number <- 1:nrow(dat_sub)
+  
+  # facet labels
+  custom_labels <- setNames(paste(user_labels, c(": Low Accuracy, High Skipping",
+                                                 ": High Accuracy, High Skipping",
+                                                 ": High Accuracy, Low Skipping",
+                                                 ": Low Accuracy, Low Skipping")[i]), users)
+  
+  # individual user response time plots
+  p <- ggplot(dat_sub, aes(x = factor(item_number), y = rt, color = response_new)) + 
+    geom_path(group = 1, color = "black", alpha = 0.3) + 
+    geom_point() + 
+    labs(x = "Item count", y = "Response Time", color = "Response") +
+    scale_color_manual(values = c("Correct" = "gray40", "Error" = "tomato3", "Question Mark" = "tan1")) +
+    facet_wrap(~user_id, nrow = 10, scales = "free", labeller = labeller(user_id = custom_labels)) + 
+    scale_x_discrete(breaks = function(x) x[seq(1, length(x), by = length(x)/10)]) +
+    theme_bw()
+  
+  ind_plots[[paste0("plot_", i)]] <- p
+}
+```
+
+
+```{r Final plot: individual response patterns, }
+ranefs[ranefs$id %in% df_user$user_id,]
+df_ind <- merge(ranefs, df_user, by = "id", all.x = TRUE)
+df_ind <- df_ind %>%
+  filter(estimate == "user") %>%
+  pivot_wider(names_from = node, values_from = value) 
+
+df_ind_sub <- df_ind[complete.cases(df_ind$label),]
+
+cor_plot <- ggplot(df_ind, aes(x = `1`, y = `2`)) + 
+  geom_point(color = "gray40", alpha = 0.3) +
+  geom_smooth(method = "lm", color = "gray7", fill = "gray7") +
+  geom_point(data = df_ind_sub, aes(x = `1`, y = `2`), color = "tomato2") +
+  geom_label(aes(label = label), size = 3, nudge_x = 0.2, nudge_y = 0.2) +
+  labs(x = "User Propensity to Skip an Item", y = "User Propensity for Incorrect Response") +
+  theme_bw() +
+  theme(legend.position = "none", text = element_text(size = 12))
+
+plotsAB <- plot_grid(ind_plots$plot_1 + ylim(0, 21) + theme(legend.position = "none", axis.title = element_blank()), 
+          ind_plots$plot_2 + ylim(0, 21) + theme(legend.position = "none", axis.title = element_blank()), 
+          ncol = 1)
+
+plotsCD <- plot_grid(ind_plots$plot_3+ ylim(0, 21) + theme(legend.position = "none", axis.title = element_blank()), 
+          ind_plots$plot_4+ ylim(0, 21) + theme(legend.position = "none", axis.title = element_blank()), 
+          ncol = 1)
+
+legend_plot <- ggplot(data.frame(x = c(1, 2, 3), y = c(1, 2, 3), label = c("Correct", "Incorrect", "Question Mark")),
+                      aes(x = x, y = y, color = label)) +
+  geom_point(alpha = 0, size = 4) +
+  scale_color_manual(name = "Response Type", 
+                     values = c("Correct" = "gray30", "Incorrect" = "tomato3", "Question Mark" = "tan2"),
+                     labels = c("Correct", "Incorrect", "Question Mark")) +
+  guides(color = guide_legend(override.aes = list(size = 5, alpha = 1))) +  # Control legend appearance
+  theme_void() + # Remove axes and background
+  theme(legend.position = "bottom", text = element_text(size = 14))
+
+
+full_grid = plot_grid(plotsCD, 
+                      cor_plot + theme(plot.margin = unit(c(2, 0.5, 2, 0.5), "cm")),
+                      plotsAB, 
+                      ncol = 4,  # Adjust number of columns
+                      rel_widths = c(2, 1, 2, 0.5), # Set the width of the legend column
+                      rel_heights = c(2, 1, 2))
+
+full_grid_legend = plot_grid(full_grid, 
+                             legend_plot + theme(plot.margin = unit(c(0, 2, 0, -1), "cm")), 
+                             ncol = 1, rel_heights = c(12, 1))
+
+full_grid_legend
+#export_pdf(full_grid_legend, height = 6, width = 18)
+```
