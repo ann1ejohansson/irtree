@@ -13,7 +13,9 @@
 ## Node 2 rows for skipped items have response = NA and are excluded from
 ## the node 2 likelihood automatically by glmer.
 ##
-## Output: dat_irt (data.table, long format), available to sourcing scripts.
+## Output: logs_clean (data.frame, wide format, grade-filtered, with derived columns)
+##         dat_irt   (data.table, long format, eligible users only)
+## Both are available to sourcing scripts.
 
 library(data.table)
 library(lme4)
@@ -35,6 +37,25 @@ load(data_path)
 logs_clean <- get(data_object)  # works for both "sim_logs" and "logs_clean"
 
 # ============================================================
+# CLEAN DATA
+# ============================================================
+# Grade filter: thresholds are defined in 00_config.R so they stay consistent
+# across the modelling pipeline and the descriptive analysis in the Rmd.
+logs_clean <- logs_clean[logs_clean$grade >= min_grade & logs_clean$grade <= max_grade, ]
+
+# Derive skip indicator from the answer string ("¿" is the Prowise Learn
+# platform's internal encoding for a skip). This makes the skip flag available
+# by a self-explanatory column name for descriptive plots, independently of the
+# node-specific `q` column used in the IRTree model.
+logs_clean$question_mark <- as.integer(logs_clean$answer == "\u00bf")
+
+# Three-level response label for descriptive plots in 05_itree_analysis.Rmd.
+logs_clean$response_type <- ifelse(
+  logs_clean$question_mark == 1, "qm",
+  ifelse(logs_clean$correct_answered == 0, "error", "correct")
+)
+
+# ============================================================
 # RESHAPE TO LONG FORMAT (one row per observation per node)
 # ============================================================
 
@@ -53,7 +74,9 @@ logs_clean_node2$response <- ifelse(logs_clean_node2$correct_answered == 0, 1, 0
 dat_irt <- rbind(logs_clean_node1, logs_clean_node2)
 dat_irt <- dat_irt[order(dat_irt$id), ]
 
-rm(logs_clean, logs_clean_node1, logs_clean_node2)
+# logs_clean is kept in the environment: the Rmd uses it for individual user
+# response-time plots (which require the original wide format).
+rm(logs_clean_node1, logs_clean_node2)
 gc()
 dat_irt <- data.table(dat_irt)
 

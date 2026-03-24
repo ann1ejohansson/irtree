@@ -63,6 +63,12 @@ if (use_simulated_data) {
 # Users with fewer than min_skips skip responses are excluded (02_irtree_prep.R)
 min_skips <- 10
 
+# Grade range for inclusion in both descriptive and inferential analyses.
+# Grades 1–2 are excluded (rarely encounter the skip button in the platform);
+# grade 9 is excluded (very few students). Applied in 02_irtree_prep.R.
+min_grade <- 3
+max_grade <- 8
+
 # 10-fold cross-validation settings (04_irtree_kfolds.R)
 n_folds <- 10 # number of folds
 holdout_frac <- 0.1 # fraction of responses held out per fold per node

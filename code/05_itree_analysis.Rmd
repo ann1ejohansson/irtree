@@ -30,32 +30,27 @@ rm(.this_dir)
 # Load data
 
 ```{r}
-load(data_path)
+# Source the prep script to apply cleaning (grade filter, derived columns),
+# reshape to long format, and filter to eligible users.
+# Produces: logs_clean (wide, eligible users) and dat_irt (long, for modelling).
+source(file.path(.this_dir, "02_irtree_prep.R"))
+
+# Build the full-sample wide table for descriptive analyses.
+# The raw data object was already loaded inside 02_irtree_prep.R, so it is
+# available via get(). Grade filter and derived columns are applied here to
+# match the cleaned data in the modelling pipeline.
 dt <- as.data.table(get(data_object))
-```
+dt[, question_mark  := as.integer(answer == "¿")]
+dt[, response_type  := ifelse(question_mark == 1, "qm",
+                               ifelse(correct_answered == 0, "error", "correct"))]
+dt <- dt[grade >= min_grade & grade <= max_grade]
 
-```{r}
-dt[answer == "¿", question_mark := 1]
-dt[answer != "¿", question_mark := 0]
-dt[, response := ifelse(question_mark == 1, "qm", ifelse(correct_answered == 0, "error", "correct"))]
-table(dt$response)
-
-dat_irt[answer == "¿", question_mark := 1]
-dat_irt[answer != "¿", question_mark := 0]
-dat_irt[, response := ifelse(question_mark == 1, "qm", ifelse(correct_answered == 0, "error", "correct"))]
-table(dat_irt$response)
-
+# Flag which users in the full sample pass the inclusion criterion (min_skips).
 dt[, in_sub := user_id %in% dat_irt[, unique(user_id)]]
 ggplot(dt[, .(mean_qm = mean(question_mark)), .(in_sub, user_id)]) +
-  geom_histogram(aes(x = mean_qm,), bins = 50) +
+  geom_histogram(aes(x = mean_qm), bins = 50) +
   facet_wrap(~in_sub, scales = "free") +
   theme_bw()
-
-dt[, mean(question_mark), in_sub]
-dat_irt[, mean(q)]
-
-# clean up grade
-dt <- dt[grade > 2 & grade < 9]
 ```
 
 # Descriptives
@@ -124,7 +119,7 @@ ggplot(dt_grade_diff, aes(x = grade, y = mean_qm, fill = difficulty, group = dif
 dt[, t := round(response_in_milliseconds/1000, 1)]
 
 library(DescTools)
-dt_t <- dt[t < 20, Freq(response), t][order(t)]
+dt_t <- dt[t < 20, Freq(response_type), t][order(t)]
 time_plot <- ggplot(dt_t, aes(x = t, y = perc, group = level, color = level)) +
   geom_line(linewidth = 1) +
   geom_point(aes(size = freq), alpha = 0.6) +
@@ -169,7 +164,7 @@ ggplot(dt_session, aes(x = new_user_domain_modified_count, y = mean_qm)) +
     text = element_text(size = 14)
   )
 
-dt_session <- dt[new_user_domain_modified_count > 0 & new_user_domain_modified_count < 100, Freq(response), new_user_domain_modified_count][order(new_user_domain_modified_count)]
+dt_session <- dt[new_user_domain_modified_count > 0 & new_user_domain_modified_count < 100, Freq(response_type), new_user_domain_modified_count][order(new_user_domain_modified_count)]
 ggplot(dt_session[level != "correct"], aes(x = new_user_domain_modified_count, y = perc, group = level, color = level)) +
   geom_line(linewidth = 1) +
   geom_point(aes(size = freq), alpha = 0.6) +
