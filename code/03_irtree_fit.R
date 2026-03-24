@@ -49,15 +49,15 @@ cat("\n\nModel 1: fully estimated")
 mod_tree <- try(glmer(response ~ 1 + (0 + factor(node) | item_id) + (0 + factor(node) | user_id),
                       data = dat_irt, family = "binomial"))
 
-if (class(mod_tree) != "try-error") {
-  sum       <- summary(mod_tree)
-  cor_theta <- attr(VarCorr(mod_tree)$user_id, "correlation")[1, 2]  # theta1/theta2 correlation
-  cor_beta  <- attr(VarCorr(mod_tree)$item_id, "correlation")[1, 2]  # beta1/beta2 correlation
+if (!inherits(mod_tree, "try-error")) {
+  mod_summary <- summary(mod_tree)
+  cor_theta   <- attr(VarCorr(mod_tree)$user_id, "correlation")[1, 2]  # theta1/theta2 correlation
+  cor_beta    <- attr(VarCorr(mod_tree)$item_id, "correlation")[1, 2]  # beta1/beta2 correlation
   model_comp[model_comp$model == "fully estimated", c("cor_theta", "cor_beta", "aic", "bic")] <-
     list(cor_theta, cor_beta, AIC(mod_tree), BIC(mod_tree))
   print(model_comp[model_comp$model == "fully estimated", ])
-  save(mod_tree, file = file.path(models_dir, "mod_tree.Rdata"))
-  save(sum,      file = file.path(models_dir, "sum_mod_tree.Rdata"))
+  save(mod_tree,    file = file.path(models_dir, "mod_tree.Rdata"))
+  save(mod_summary, file = file.path(models_dir, "sum_mod_tree.Rdata"))
   rm(mod_tree); gc()
 } else {
   print("Model 1 estimation failed.")
@@ -72,14 +72,14 @@ cat("\n\nModel 2: item-constrained")
 mod_tree_con_item <- try(glmer(response ~ 1 + (1 | item_id) + (0 + factor(node) | user_id),
                                data = dat_irt, family = "binomial"))
 
-if (class(mod_tree_con_item) != "try-error") {
-  sum       <- summary(mod_tree_con_item)
-  cor_theta <- attr(VarCorr(mod_tree_con_item)$user_id, "correlation")[1, 2]
+if (!inherits(mod_tree_con_item, "try-error")) {
+  mod_summary <- summary(mod_tree_con_item)
+  cor_theta   <- attr(VarCorr(mod_tree_con_item)$user_id, "correlation")[1, 2]
   model_comp[model_comp$model == "item-constrained", c("cor_theta", "cor_beta", "aic", "bic")] <-
     list(cor_theta, NA, AIC(mod_tree_con_item), BIC(mod_tree_con_item))
   print(model_comp[model_comp$model == "item-constrained", ])
   save(mod_tree_con_item, file = file.path(models_dir, "mod_tree_con_item.Rdata"))
-  save(sum,               file = file.path(models_dir, "sum_mod_tree_con_item.Rdata"))
+  save(mod_summary,       file = file.path(models_dir, "sum_mod_tree_con_item.Rdata"))
   rm(mod_tree_con_item); gc()
 } else {
   print("Model 2 estimation failed.")
@@ -94,14 +94,14 @@ cat("\n\nModel 3: user-constrained")
 mod_tree_con_person <- try(glmer(response ~ 1 + (0 + factor(node) | item_id) + (1 | user_id),
                                  data = dat_irt, family = "binomial"))
 
-if (class(mod_tree_con_person) != "try=error") {
-  sum      <- summary(mod_tree_con_person)
-  cor_beta <- attr(VarCorr(mod_tree_con_person)$item_id, "correlation")[1, 2]
+if (!inherits(mod_tree_con_person, "try-error")) {
+  mod_summary <- summary(mod_tree_con_person)
+  cor_beta    <- attr(VarCorr(mod_tree_con_person)$item_id, "correlation")[1, 2]
   model_comp[model_comp$model == "user-constrained", c("cor_theta", "cor_beta", "aic", "bic")] <-
     list(NA, cor_beta, AIC(mod_tree_con_person), BIC(mod_tree_con_person))
   print(model_comp[model_comp$model == "user-constrained", ])
   save(mod_tree_con_person, file = file.path(models_dir, "mod_tree_con_person.Rdata"))
-  save(sum,                 file = file.path(models_dir, "sum_mod_tree_con_person.Rdata"))
+  save(mod_summary,         file = file.path(models_dir, "sum_mod_tree_con_person.Rdata"))
   rm(mod_tree_con_person); gc()
 } else {
   print("Model 3 estimation failed.")
@@ -117,13 +117,13 @@ cat("\n\nModel 4: fully constrained")
 mod_tree_con <- try(glmer(response ~ 1 + factor(node) + (1 | item_id) + (1 | user_id),
                           data = dat_irt, family = "binomial"))
 
-if (class(mod_tree_con) != "try-error") {
-  sum <- summary(mod_tree_con)
+if (!inherits(mod_tree_con, "try-error")) {
+  mod_summary <- summary(mod_tree_con)
   model_comp[model_comp$model == "fully constrained", c("cor_theta", "cor_beta", "aic", "bic")] <-
     list(NA, NA, AIC(mod_tree_con), BIC(mod_tree_con))
   print(model_comp[model_comp$model == "fully constrained", ])
   save(mod_tree_con, file = file.path(models_dir, "mod_tree_con.Rdata"))
-  save(sum,          file = file.path(models_dir, "sum_mod_tree_con.Rdata"))
+  save(mod_summary,  file = file.path(models_dir, "sum_mod_tree_con.Rdata"))
   rm(mod_tree_con); gc()
 } else {
   print("Model 4 estimation failed.")

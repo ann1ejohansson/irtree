@@ -168,8 +168,8 @@ for (k in 1:n_folds) {
       round(difftime(Sys.time(), t, units = "mins"), 1),
       "min"
     )
-    p <- predict(m, newdata = dat_fit[remove == 1, ], allow.new.levels = TRUE)
-    dat_fit[remove == 1, pred_mod := plogis(p)]
+    p <- predict(m, newdata = dat_fit, allow.new.levels = TRUE)
+    dat_fit[, pred_mod := plogis(p)]
     rmse <- dat_fit[
       remove == 1 & !is.na(response),
       sqrt(mean((response - pred_mod)^2))
@@ -189,7 +189,7 @@ for (k in 1:n_folds) {
     round(difftime(Sys.time(), t_fold, units = "mins"), 1),
     "min"
   )
-  rm(dat_val, dat_fit, p, rmse)
+  rm(list = intersect(ls(), c("dat_val", "dat_fit", "p", "rmse")))
   gc()
 
   # Save progress after every fold so partial results are not lost

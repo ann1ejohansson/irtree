@@ -154,28 +154,44 @@ logs$answer <- ifelse(
 # ============================================================
 # SIMULATE RESPONSE TIMES
 # ============================================================
-# Based on the HSHS scoring rule: S = (2x-1)(alpha*d - alpha*t), alpha = 1/d
 # Skips are rapid; correct responses moderate; incorrect responses slow.
+# simulate_rt() (defined in 00_config.R) draws from a truncated log-normal
+# parameterised by mode, so values are naturally right-skewed and bounded.
 
-# choose sigma (controls skew)
-sigma <- 0.8
-
-rt <- rlnorm(n, meanlog = mu, sdlog = sigma)
-
-# enforce bounds
-rt <- pmin(pmax(rt, 500), 20000)
-response_in_milliseconds <- ifelse(
+logs$rt <- ifelse(
   logs$q == 1,
-  pmax(500, rlnorm(nrow(logs), meanlog = log(2000) + sigma^2, sd = 2000)),
+  simulate_rt(
+    nrow(logs),
+    mode = 2000,
+    sigma = 0.6,
+    min_rt = 500,
+    max_rt = deadline
+  ),
   ifelse(
     logs$correct_answered == 1,
-    pmax(1000, rnorm(nrow(logs), mean = 5000, sd = 8000)),
-    pmax(1000, rnorm(nrow(logs), mean = 6000, sd = 5000))
+    simulate_rt(
+      nrow(logs),
+      mode = 5000,
+      sigma = 0.7,
+      min_rt = 1000,
+      max_rt = deadline
+    ),
+    simulate_rt(
+      nrow(logs),
+      mode = 6000,
+      sigma = 0.7,
+      min_rt = 1000,
+      max_rt = deadline
+    )
   )
 )
-response_in_milliseconds <- pmin(response_in_milliseconds, deadline)
+# response_in_milliseconds mirrors `rt` and is kept to match the column name
+# used in the real Prowise Learn export (consumed by 05_itree_analysis.Rmd).
+logs$response_in_milliseconds <- logs$rt
 
-# Session count
+# new_user_domain_modified_count is the Prowise Learn platform's internal name
+# for cumulative session count. Retained here so the simulated data is a
+# drop-in replacement for the real dataset without renaming columns downstream.
 logs$new_user_domain_modified_count <- logs$session_count
 
 # ============================================================

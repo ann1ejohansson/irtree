@@ -194,7 +194,7 @@ load(file.path(results_dir, "models/sum_mod_tree.Rdata"))
 ## Fixed effects
 
 ```{r}
-int <- sum$coefficients[1]
+int <- mod_summary$coefficients[1]
 1 / (1 + exp(-int))
 
 ```
@@ -278,7 +278,7 @@ combined_plot <- plot_grid(cor_plot_item_marginal,
                            ncol = 2)
 rm(cor_plot_item, cor_plot_item_marginal, cor_plot_user_marginal)
 combined_plot
-export_pdf(combined_plot, height = 4, width = 6)
+save_plot(combined_plot, name = "combined_plot", height = 4, width = 6)
 ```
 
 
@@ -398,5 +398,5 @@ full_grid_legend = plot_grid(full_grid,
                              ncol = 1, rel_heights = c(12, 1))
 
 full_grid_legend
-#export_pdf(full_grid_legend, height = 6, width = 18)
+#save_plot(full_grid_legend, name = "full_grid_legend", height = 6, width = 18)
 ```

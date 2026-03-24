@@ -105,20 +105,19 @@ rm(.d)
 # ============================================================
 
 colors = c("grey40", "tomato3", "turquoise4", "tan2")
-export_pdf <- function(
-  plot_object,
-  height = 10,
-  width = 12,
-  name = paste0(deparse(substitute(plot_object)), ".pdf")
-) {
-  pdf(
-    file = file.path(plots_dir, name),
-    height = height,
-    width = width,
-    bg = "white"
+
+# Save a ggplot object to the plots directory.
+# Requires an explicit `name` (without extension) so filenames are always
+# predictable and auditable. `format` can be "pdf", "png", "svg", etc.
+save_plot <- function(plot_object, name, height = 10, width = 12, format = "pdf") {
+  ggplot2::ggsave(
+    filename = paste0(name, ".", format),
+    plot     = plot_object,
+    path     = plots_dir,
+    height   = height,
+    width    = width,
+    bg       = "white"
   )
-  print(plot_object)
-  dev.off()
 }
 
 
