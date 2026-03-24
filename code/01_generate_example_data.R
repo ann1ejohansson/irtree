@@ -24,20 +24,26 @@ library(data.table) # consistent with downstream scripts
 # beforehand. Mirrors the detection logic in 00_config.R.
 # Priority: Rscript CLI -> RStudio -> source() call -> working directory.
 .this_dir <- (function() {
-  args     <- commandArgs(trailingOnly = FALSE)
+  args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("--file=", args, value = TRUE)
-  if (length(file_arg) > 0)
+  if (length(file_arg) > 0) {
     return(dirname(normalizePath(sub("--file=", "", file_arg))))
-  if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+  }
+  if (
+    requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()
+  ) {
     ctx <- rstudioapi::getSourceEditorContext()
-    if (!is.null(ctx) && nchar(ctx$path) > 0)
+    if (!is.null(ctx) && nchar(ctx$path) > 0) {
       return(dirname(normalizePath(ctx$path)))
+    }
   }
   src <- tryCatch(
     dirname(normalizePath(sys.frames()[[1]]$ofile)),
     error = function(e) NULL
   )
-  if (!is.null(src)) return(src)
+  if (!is.null(src)) {
+    return(src)
+  }
   getwd()
 })()
 source(file.path(.this_dir, "00_config.R"))
@@ -51,8 +57,17 @@ set.seed(random_seed)
 
 n_users <- 500 # students (real dataset: ~3500; reduced for speed)
 n_items <- 300 # unique items in the pool
-mean_trials <- 100 # mean trials per student (Poisson-distributed)
+trials_per_session <- 10 # fixed number of trials per session
 deadline <- 20000 # response deadline in milliseconds (fixed in platform)
+
+# Session counts follow a right-skewed log-normal distribution:
+# many learners complete only a handful of sessions, but a meaningful
+# proportion reach 50-100 sessions (matching the real platform).
+session_meanlog <- log(10) # log-scale mean → median ≈ 10 sessions (mode ≈ 4, clipped to min)
+session_sdlog <- 1.0 # log-scale SD   → ~5% of learners exceed ~50 sessions,
+#                   ~1% exceed ~100 sessions
+session_min <- 5 # minimum sessions per learner
+session_max <- 150 # cap to keep simulation times reasonable
 
 # Person parameters: theta1 = skip propensity, theta2 = error propensity
 # Both are drawn from a bivariate normal with a moderate positive correlation:
@@ -116,8 +131,17 @@ items$beta1 <- rnorm(
 # SIMULATE TRIALS
 # ============================================================
 
-# Each student completes a Poisson-distributed number of trials (min. 30)
-n_trials_per_user <- pmax(rpois(n_users, lambda = mean_trials), 30)
+# Draw session counts from a right-skewed log-normal, then convert to trial
+# counts. Most learners complete a few sessions; the long right tail ensures
+# a meaningful proportion reach 50-100 sessions, as in the real platform.
+n_sessions_per_user <- as.integer(pmin(
+  pmax(
+    ceiling(rlnorm(n_users, meanlog = session_meanlog, sdlog = session_sdlog)),
+    session_min
+  ),
+  session_max
+))
+n_trials_per_user <- n_sessions_per_user * trials_per_session
 
 # Build one row per student-item interaction; items are sampled with
 # replacement to mimic an adaptive system drawing from a shared item pool
@@ -130,7 +154,7 @@ for (u in seq_len(n_users)) {
     grade = users$grade[u],
     theta1 = users$theta1[u],
     theta2 = users$theta2[u],
-    session_count = (seq_len(nt) - 1) %/% 10 + 1
+    session_count = (seq_len(nt) - 1) %/% trials_per_session + 1
   )
 }
 logs <- rbindlist(logs_list)
@@ -249,6 +273,28 @@ for (d in 0:2) {
     "\n"
   )
 }
+
+# Session count distribution
+sessions_per_user <- sim_logs[, max(new_user_domain_modified_count), user_id]$V1
+cat(
+  "Sessions per learner (median / mean / max) :",
+  round(median(sessions_per_user)),
+  "/",
+  round(mean(sessions_per_user)),
+  "/",
+  max(sessions_per_user),
+  "\n"
+)
+cat(
+  "% learners with >= 50 sessions :",
+  round(100 * mean(sessions_per_user >= 50), 1),
+  "%\n"
+)
+cat(
+  "% learners with >= 100 sessions :",
+  round(100 * mean(sessions_per_user >= 100), 1),
+  "%\n"
+)
 
 # Check inclusion criterion applied in 02_irtree_prep.R
 skips_per_user <- sim_logs[q == 1, .N, user_id]

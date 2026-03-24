@@ -1,4 +1,5 @@
 ## 02_irtree_prep.R
+## Author: Annie Johansson
 ##
 ## Loads and reshapes the response data into the long format required by the
 ## IRTree model. Sourced automatically by 03_irtree_fit.R and 04_irtree_kfolds.R.
@@ -13,7 +14,7 @@
 ## Node 2 rows for skipped items have response = NA and are excluded from
 ## the node 2 likelihood automatically by glmer.
 ##
-## Output: logs_clean (data.frame, wide format, grade-filtered, with derived columns)
+## Output: logs (data.frame, wide format, grade-filtered, with derived columns)
 ##         dat_irt   (data.table, long format, eligible users only)
 ## Both are available to sourcing scripts.
 
@@ -24,20 +25,26 @@ library(lme4)
 # beforehand. Mirrors the detection logic in 00_config.R.
 # Priority: Rscript CLI -> RStudio -> source() call -> working directory.
 .this_dir <- (function() {
-  args     <- commandArgs(trailingOnly = FALSE)
+  args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("--file=", args, value = TRUE)
-  if (length(file_arg) > 0)
+  if (length(file_arg) > 0) {
     return(dirname(normalizePath(sub("--file=", "", file_arg))))
-  if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+  }
+  if (
+    requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()
+  ) {
     ctx <- rstudioapi::getSourceEditorContext()
-    if (!is.null(ctx) && nchar(ctx$path) > 0)
+    if (!is.null(ctx) && nchar(ctx$path) > 0) {
       return(dirname(normalizePath(ctx$path)))
+    }
   }
   src <- tryCatch(
     dirname(normalizePath(sys.frames()[[1]]$ofile)),
     error = function(e) NULL
   )
-  if (!is.null(src)) return(src)
+  if (!is.null(src)) {
+    return(src)
+  }
   getwd()
 })()
 source(file.path(.this_dir, "00_config.R"))
@@ -47,25 +54,36 @@ rm(.this_dir)
 # LOAD DATA
 # ============================================================
 load(data_path)
-logs_clean <- get(data_object)  # works for both "sim_logs" and "logs_clean"
+logs <- get(data_object) # works for both "sim_logs" and "logs"
+
+# Snapshot before any cleaning — used in the summary report below
+.n_rows_raw <- nrow(logs)
+.n_users_raw <- length(unique(logs$user_id))
 
 # ============================================================
 # CLEAN DATA
 # ============================================================
 # Grade filter: thresholds are defined in 00_config.R so they stay consistent
 # across the modelling pipeline and the descriptive analysis in the Rmd.
-logs_clean <- logs_clean[logs_clean$grade >= min_grade & logs_clean$grade <= max_grade, ]
+logs <- logs[
+  logs$grade >= min_grade & logs$grade <= max_grade,
+]
+
+# Snapshot after grade filter
+.n_rows_grade <- nrow(logs)
+.n_users_grade <- length(unique(logs$user_id))
 
 # Derive skip indicator from the answer string ("¿" is the Prowise Learn
 # platform's internal encoding for a skip). This makes the skip flag available
 # by a self-explanatory column name for descriptive plots, independently of the
 # node-specific `q` column used in the IRTree model.
-logs_clean$question_mark <- as.integer(logs_clean$answer == "\u00bf")
+logs$question_mark <- as.integer(logs$answer == "\u00bf")
 
 # Three-level response label for descriptive plots in 05_itree_analysis.Rmd.
-logs_clean$response_type <- ifelse(
-  logs_clean$question_mark == 1, "qm",
-  ifelse(logs_clean$correct_answered == 0, "error", "correct")
+logs$response_type <- ifelse(
+  logs$question_mark == 1,
+  "qm",
+  ifelse(logs$correct_answered == 0, "error", "correct")
 )
 
 # ============================================================
@@ -73,23 +91,27 @@ logs_clean$response_type <- ifelse(
 # ============================================================
 
 # Node 1 rows: response = 1 if the student skipped, 0 if they responded
-logs_clean_node1          <- logs_clean
-logs_clean_node1$node     <- 1
-logs_clean_node1$response <- logs_clean_node1$q
+logs_node1 <- logs
+logs_node1$node <- 1
+logs_node1$response <- logs_node1$q
 
 # Node 2 rows: response = 1 if incorrect, 0 if correct, NA if skipped
 # (NA rows are excluded from the node 2 likelihood by glmer)
-logs_clean_node2          <- logs_clean
-logs_clean_node2$node     <- 2
-logs_clean_node2$response <- ifelse(logs_clean_node2$correct_answered == 0, 1, 0)
+logs_node2 <- logs
+logs_node2$node <- 2
+logs_node2$response <- ifelse(
+  logs_node2$correct_answered == 0,
+  1,
+  0
+)
 
 # Stack and sort by original observation id to keep student-item pairs together
-dat_irt <- rbind(logs_clean_node1, logs_clean_node2)
+dat_irt <- rbind(logs_node1, logs_node2)
 dat_irt <- dat_irt[order(dat_irt$id), ]
 
-# logs_clean is kept in the environment: the Rmd uses it for individual user
+# logs is kept in the environment: the Rmd uses it for individual user
 # response-time plots (which require the original wide format).
-rm(logs_clean_node1, logs_clean_node2)
+rm(logs_node1, logs_node2)
 gc()
 dat_irt <- data.table(dat_irt)
 
@@ -99,6 +121,55 @@ dat_irt <- data.table(dat_irt)
 # Keep only students with at least min_skips skip responses (node 1, response = 1).
 # This ensures each included student has enough skip data to estimate
 # their skip propensity (theta1) reliably.
-users   <- dat_irt[node == 1 & response == 1, .N, .(user_id)][N >= min_skips, user_id]
+users <- dat_irt[node == 1 & response == 1, .N, .(user_id)][
+  N >= min_skips,
+  user_id
+]
 dat_irt <- dat_irt[user_id %in% users, ]
 rm(users)
+
+# ============================================================
+# PREP SUMMARY
+# ============================================================
+.n_rows_final <- nrow(dat_irt) / 2 # divide by 2: dat_irt has two rows per response
+.n_users_final <- length(unique(dat_irt$user_id))
+
+cat("=== Data prep summary ===\n")
+cat(sprintf(
+  "%-28s %6d responses  %4d users\n",
+  "Raw data:",
+  .n_rows_raw,
+  .n_users_raw
+))
+cat(sprintf(
+  "%-28s %6d responses  %4d users  (-%d responses, -%d users)\n",
+  sprintf("After grade filter (%d-%d):", min_grade, max_grade),
+  .n_rows_grade,
+  .n_users_grade,
+  .n_rows_raw - .n_rows_grade,
+  .n_users_raw - .n_users_grade
+))
+cat(sprintf(
+  "%-28s %6d responses  %4d users  (-%d responses, -%d users)\n",
+  sprintf("After skip filter (>=%d):", min_skips),
+  .n_rows_final,
+  .n_users_final,
+  .n_rows_grade - .n_rows_final,
+  .n_users_grade - .n_users_final
+))
+cat(sprintf(
+  "%-28s %6d responses  %4d users  (%.1f%% of raw responses retained)\n",
+  "Final analytical sample:",
+  .n_rows_final,
+  .n_users_final,
+  100 * .n_rows_final / .n_rows_raw
+))
+
+rm(
+  .n_rows_raw,
+  .n_users_raw,
+  .n_rows_grade,
+  .n_users_grade,
+  .n_rows_final,
+  .n_users_final
+)
