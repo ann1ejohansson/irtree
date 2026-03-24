@@ -20,13 +20,26 @@
 library(data.table)
 library(lme4)
 
-# Source config via absolute path so wd does not need to be correct beforehand
-.this_dir <- if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
-  dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path))
-} else {
-  args <- commandArgs(trailingOnly = FALSE)
-  dirname(normalizePath(sub("--file=", "", grep("--file=", args, value = TRUE))))
-}
+# Source config via absolute path so the working directory need not be set
+# beforehand. Mirrors the detection logic in 00_config.R.
+# Priority: Rscript CLI -> RStudio -> source() call -> working directory.
+.this_dir <- (function() {
+  args     <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("--file=", args, value = TRUE)
+  if (length(file_arg) > 0)
+    return(dirname(normalizePath(sub("--file=", "", file_arg))))
+  if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+    ctx <- rstudioapi::getSourceEditorContext()
+    if (!is.null(ctx) && nchar(ctx$path) > 0)
+      return(dirname(normalizePath(ctx$path)))
+  }
+  src <- tryCatch(
+    dirname(normalizePath(sys.frames()[[1]]$ofile)),
+    error = function(e) NULL
+  )
+  if (!is.null(src)) return(src)
+  getwd()
+})()
 source(file.path(.this_dir, "00_config.R"))
 rm(.this_dir)
 
