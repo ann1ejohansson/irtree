@@ -14,31 +14,27 @@ library(data.table)
 library(DescTools)
 library(ggExtra)
 library(cowplot)
-
-# plotting tools
-colors = c("grey40", "tomato3", "turquoise4", "tan2")
-export_pdf <- function(plot_object, height = 10, width = 12, name = deparse(substitute(plot_object))) {
-  # !! need to end the file name with a / !!
-  pdf(file = paste0("~/research-collaboration/question-mark/results_11022025/plots/", name, ".pdf"),
-      height = height,
-      width = width,
-      bg = "white")
-  print(plot_object)
-  dev.off()
-}
 ```
 
+```{r source-config, include=FALSE}
+.this_dir <- if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+  dirname(normalizePath(rstudioapi::getActiveDocumentContext()$path))
+} else {
+  args <- commandArgs(trailingOnly = FALSE)
+  dirname(normalizePath(sub("--file=", "", grep("--file=", args, value = TRUE))))
+}
+source(file.path(.this_dir, "00_config.R"))
+rm(.this_dir)
+```
 
 # Load data
 
 ```{r}
-# check differences in qm between raw and cleaned dataset
+load(data_path)
+dt <- as.data.table(get(data_object))
+```
 
-load("~/research-collaboration/question-mark/new data/logs_all.Rdata")
-source("~/research-collaboration/question-mark/irtree_prep.R")
-
-dt <- as.data.table(logs_all)
-rm(logs_all)
+```{r}
 dt[answer == "¿", question_mark := 1]
 dt[answer != "¿", question_mark := 0]
 dt[, response := ifelse(question_mark == 1, "qm", ifelse(correct_answered == 0, "error", "correct"))]
@@ -191,8 +187,8 @@ ggplot(dt_session[level != "correct"], aes(x = new_user_domain_modified_count, y
 
 ## Load tree model
 ```{r}
-load("~/research-collaboration/question-mark/results_11022025/mod_tree.Rdata")
-load("~/research-collaboration/question-mark/results_11022025/sum_mod_tree.Rdata")
+load(file.path(results_dir, "models/mod_tree.Rdata"))
+load(file.path(results_dir, "models/sum_mod_tree.Rdata"))
 ```
 
 ## Fixed effects
