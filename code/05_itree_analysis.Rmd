@@ -587,10 +587,15 @@ The correlation plot in the previous section summarises the average relationship
 ```{r ind-responses}
 df_user <- data.frame()
 ind_plots <- list()
-labels <- LETTERS[1:8]
-label_index <- 1
+quadrant_names <- c("UR", "LR", "LL", "UL")
+quadrant_desc <- c(
+  "UR" = ": Low Accuracy, High Skipping",
+  "LR" = ": High Accuracy, High Skipping",
+  "LL" = ": High Accuracy, Low Skipping",
+  "UL" = ": Low Accuracy, Low Skipping"
+)
 
-for (i in 1:4) {
+for (i in seq_along(quadrant_names)) {
   # set boundary for which areas of correlation plot to sample from
   # upper right, lower right, lower left, upper left
   min_node1 <- c(1, 1, -4, -4)[i]
@@ -599,7 +604,7 @@ for (i in 1:4) {
   max_node2 <- c(4, 0, 0, 4)[i]
 
   # sample 2 users per quadrant
-  set.seed(121103961)
+  set.seed(random_seed)
   users <- sample(
     as.numeric(rownames(ranefs_mod$user_id[
       which(
@@ -612,39 +617,76 @@ for (i in 1:4) {
     2
   )
 
-  # assign labels to sampled users
-  user_labels <- labels[label_index:(label_index + 1)]
-  label_index <- label_index + 2
-
-  # add user data and labels for the correlation plot
+  # store sampled users; labels are assigned later based on clockwise position
   df_user <- rbind(
     df_user,
     data.frame(
       id = users,
-      label = user_labels
+      quadrant = quadrant_names[i]
     )
   )
+}
+
+users_df <- as.data.frame(ranefs_mod$user_id)
+users_df$user_id <- as.numeric(rownames(users_df))
+names(users_df)[1:2] <- c("node1", "node2")
+
+df_user <- df_user %>%
+  left_join(users_df, by = c("id" = "user_id")) %>%
+  group_by(quadrant) %>%
+  mutate(
+    # Rank within each quadrant so ranks are always 1 or 2.
+    # UR/LR: descending node2 so the topmost point in the scatter gets the
+    #        lower rank (encountered first going clockwise down the right side).
+    # LL/UL: ascending node2 so the bottommost point gets the lower rank
+    #        (encountered first going clockwise up the left side).
+    within_rank = case_when(
+      quadrant %in% c("UR", "LR") ~ dplyr::min_rank(dplyr::desc(node2)),
+      quadrant %in% c("LL", "UL") ~ dplyr::min_rank(node2)
+    )
+  ) %>%
+  ungroup() %>%
+  mutate(
+    slot_order = case_when(
+      quadrant == "UR" ~ within_rank,
+      quadrant == "LR" ~ 2L + within_rank,
+      quadrant == "LL" ~ 4L + within_rank,
+      quadrant == "UL" ~ 6L + within_rank
+    )
+  ) %>%
+  arrange(slot_order) %>%
+  mutate(label = LETTERS[seq_len(n())])
+
+for (quadrant in quadrant_names) {
+  quadrant_users <- df_user %>%
+    filter(quadrant == !!quadrant) %>%
+    arrange(slot_order)
+
+  users <- quadrant_users$id
+  user_labels <- quadrant_users$label
 
   # prepare data for individual user response time plots
-  dat_sub <- logs_clean[logs_clean$user_id %in% users, ]
+  dat_sub <- logs[logs$user_id %in% users, ]
   dat_sub$response_new <- ifelse(
     dat_sub$q == 1,
     "Question Mark",
     ifelse(dat_sub$correct_answered == 0, "Error", "Correct")
   )
   dat_sub <- dat_sub[order(dat_sub$id), ]
+  dat_sub$rt <- dat_sub$rt / 1000   # convert ms → s
   dat_sub$item_number <- 1:nrow(dat_sub)
+  # For left-column quadrants (LL, UL) reverse the factor levels so that the
+  # lower-lettered user renders at the bottom of the panel, giving a
+  # bottom-to-top reading of e→f (LL) and g→h (UL) that matches the
+  # clockwise direction of the scatter plot labels.
+  facet_levels <- if (quadrant %in% c("LL", "UL")) rev(users) else users
+  dat_sub$user_id <- factor(dat_sub$user_id, levels = facet_levels)
 
   # facet labels
   custom_labels <- setNames(
     paste(
       user_labels,
-      c(
-        ": Low Accuracy, High Skipping",
-        ": High Accuracy, High Skipping",
-        ": High Accuracy, Low Skipping",
-        ": Low Accuracy, Low Skipping"
-      )[i]
+      quadrant_desc[[quadrant]]
     ),
     users
   )
@@ -675,7 +717,7 @@ for (i in 1:4) {
     }) +
     theme_bw()
 
-  ind_plots[[paste0("plot_", i)]] <- p
+  ind_plots[[quadrant]] <- p
 }
 
 p
@@ -683,8 +725,8 @@ p
 
 
 ```{r plot-ind-responses }
-ranefs[ranefs$id %in% df_user$user_id, ]
-df_ind <- merge(ranefs, df_user, by = "id", all.x = TRUE)
+ranefs[ranefs$id %in% df_user$id, ]
+df_ind <- merge(ranefs, df_user[, c("id", "label")], by = "id", all.x = TRUE)
 df_ind <- df_ind %>%
   filter(estimate == "user") %>%
   pivot_wider(names_from = node, values_from = value)
@@ -695,7 +737,7 @@ cor_plot <- ggplot(df_ind, aes(x = `1`, y = `2`)) +
   geom_point(color = "gray40", alpha = 0.3) +
   geom_smooth(method = "lm", color = "gray7", fill = "gray7") +
   geom_point(data = df_ind_sub, aes(x = `1`, y = `2`), color = "tomato2") +
-  geom_label(aes(label = label), size = 3, nudge_x = 0.2, nudge_y = 0.2) +
+  geom_label(data = df_ind_sub, aes(label = label), size = 3, nudge_x = 0.2, nudge_y = 0.2) +
   labs(
     x = "User Propensity to Skip an Item",
     y = "User Propensity for Incorrect Response"
@@ -704,21 +746,21 @@ cor_plot <- ggplot(df_ind, aes(x = `1`, y = `2`)) +
   theme(legend.position = "none", text = element_text(size = 12))
 
 plotsAB <- plot_grid(
-  ind_plots$plot_1 +
-    ylim(0, 20001) +
+  ind_plots$UR +
+    ylim(0, 20) +
     theme(legend.position = "none", axis.title = element_blank()),
-  ind_plots$plot_2 +
-    ylim(0, 20001) +
+  ind_plots$LR +
+    ylim(0, 20) +
     theme(legend.position = "none", axis.title = element_blank()),
   ncol = 1
 )
 
 plotsCD <- plot_grid(
-  ind_plots$plot_3 +
-    ylim(0, 20001) +
+  ind_plots$UL +
+    ylim(0, 20) +
     theme(legend.position = "none", axis.title = element_blank()),
-  ind_plots$plot_4 +
-    ylim(0, 20001) +
+  ind_plots$LL +
+    ylim(0, 20) +
     theme(legend.position = "none", axis.title = element_blank()),
   ncol = 1
 )
@@ -755,8 +797,22 @@ full_grid = plot_grid(
   rel_heights = c(2, 1, 2)
 )
 
-full_grid_legend = plot_grid(
+# Shared y-axis label for the four response-sequence panels.
+# ggdraw() + draw_label() creates a plain rotated text grob; slotting it in as
+# a narrow left column via plot_grid() keeps everything aligned without
+# touching the individual sub-plots.
+y_label <- ggdraw() +
+  draw_label("Response Time (s)", angle = 90, size = 12)
+
+full_grid_with_ylab <- plot_grid(
+  y_label,
   full_grid,
+  ncol = 2,
+  rel_widths = c(0.04, 1)
+)
+
+full_grid_legend = plot_grid(
+  full_grid_with_ylab,
   legend_plot + theme(plot.margin = unit(c(0, 2, 0, -1), "cm")),
   ncol = 1,
   rel_heights = c(12, 1)
@@ -764,6 +820,190 @@ full_grid_legend = plot_grid(
 
 full_grid_legend
 #save_plot(full_grid_legend, name = "full_grid_legend", height = 6, width = 18)
+```
+
+```{r ind-responses-variations}
+# Helper function: sample 8 users (2 per quadrant) using `seed`, build the
+# full composite plot, and return it.  All objects it relies on
+# (ranefs_mod, ranefs, logs, users_df, quadrant_names, quadrant_desc,
+# legend_plot) are created in earlier chunks and available in the environment.
+build_ind_grid <- function(seed) {
+
+  df_user_v <- data.frame()
+
+  set.seed(seed)
+  for (i in seq_along(quadrant_names)) {
+    min_node1 <- c(1, 1, -4, -4)[i]
+    max_node1 <- c(6, 6, -1, 0)[i]
+    min_node2 <- c(1.5, -2, -2, 1)[i]
+    max_node2 <- c(4, 0, 0, 4)[i]
+
+    users_v <- sample(
+      as.numeric(rownames(ranefs_mod$user_id[
+        which(
+          ranefs_mod$user_id$`factor(node)1` > min_node1 &
+            ranefs_mod$user_id$`factor(node)1` < max_node1 &
+            ranefs_mod$user_id$`factor(node)2` > min_node2 &
+            ranefs_mod$user_id$`factor(node)2` < max_node2
+        ),
+      ])),
+      2
+    )
+    df_user_v <- rbind(
+      df_user_v,
+      data.frame(id = users_v, quadrant = quadrant_names[i])
+    )
+  }
+
+  df_user_v <- df_user_v %>%
+    left_join(users_df, by = c("id" = "user_id")) %>%
+    group_by(quadrant) %>%
+    mutate(
+      within_rank = case_when(
+        quadrant %in% c("UR", "LR") ~ dplyr::min_rank(dplyr::desc(node2)),
+        quadrant %in% c("LL", "UL") ~ dplyr::min_rank(node2)
+      )
+    ) %>%
+    ungroup() %>%
+    mutate(
+      slot_order = case_when(
+        quadrant == "UR" ~ within_rank,
+        quadrant == "LR" ~ 2L + within_rank,
+        quadrant == "LL" ~ 4L + within_rank,
+        quadrant == "UL" ~ 6L + within_rank
+      )
+    ) %>%
+    arrange(slot_order) %>%
+    mutate(label = LETTERS[seq_len(n())])
+
+  ind_plots_v <- list()
+  for (quadrant in quadrant_names) {
+    quadrant_users_v <- df_user_v %>%
+      filter(quadrant == !!quadrant) %>%
+      arrange(slot_order)
+
+    users_v      <- quadrant_users_v$id
+    user_labels_v <- quadrant_users_v$label
+
+    dat_sub_v <- logs[logs$user_id %in% users_v, ]
+    dat_sub_v$response_new <- ifelse(
+      dat_sub_v$q == 1,
+      "Question Mark",
+      ifelse(dat_sub_v$correct_answered == 0, "Error", "Correct")
+    )
+    dat_sub_v <- dat_sub_v[order(dat_sub_v$id), ]
+    dat_sub_v$rt          <- dat_sub_v$rt / 1000  # ms -> s
+    dat_sub_v$item_number <- 1:nrow(dat_sub_v)
+
+    facet_levels_v <- if (quadrant %in% c("LL", "UL")) rev(users_v) else users_v
+    dat_sub_v$user_id <- factor(dat_sub_v$user_id, levels = facet_levels_v)
+
+    custom_labels_v <- setNames(
+      paste(user_labels_v, quadrant_desc[[quadrant]]),
+      users_v
+    )
+
+    ind_plots_v[[quadrant]] <- ggplot(
+      dat_sub_v,
+      aes(x = factor(item_number), y = rt, color = response_new)
+    ) +
+      geom_path(group = 1, color = "black", alpha = 0.3) +
+      geom_point() +
+      labs(x = "Item count", y = "Response Time (s)", color = "Response") +
+      scale_color_manual(values = c(
+        "Correct"       = "gray40",
+        "Error"         = "tomato3",
+        "Question Mark" = "tan1"
+      )) +
+      facet_wrap(
+        ~user_id, nrow = 10, scales = "free",
+        labeller = labeller(user_id = custom_labels_v)
+      ) +
+      scale_x_discrete(breaks = function(x) {
+        x[seq(1, length(x), by = length(x) / 10)]
+      }) +
+      theme_bw()
+  }
+
+  # Scatter plot with the sampled users highlighted
+  df_ind_v     <- merge(ranefs, df_user_v[, c("id", "label")], by = "id", all.x = TRUE)
+  df_ind_v     <- df_ind_v %>%
+    filter(estimate == "user") %>%
+    pivot_wider(names_from = node, values_from = value)
+  df_ind_sub_v <- df_ind_v[complete.cases(df_ind_v$label), ]
+
+  cor_plot_v <- ggplot(df_ind_v, aes(x = `1`, y = `2`)) +
+    geom_point(color = "gray40", alpha = 0.3) +
+    geom_smooth(method = "lm", color = "gray7", fill = "gray7") +
+    geom_point(data = df_ind_sub_v, aes(x = `1`, y = `2`), color = "tomato2") +
+    geom_label(
+      data = df_ind_sub_v, aes(label = label),
+      size = 3, nudge_x = 0.2, nudge_y = 0.2
+    ) +
+    labs(
+      x = "User Propensity to Skip an Item",
+      y = "User Propensity for Incorrect Response"
+    ) +
+    theme_bw() +
+    theme(legend.position = "none", text = element_text(size = 12))
+
+  plotsAB_v <- plot_grid(
+    ind_plots_v$UR + ylim(0, 20) +
+      theme(legend.position = "none", axis.title = element_blank()),
+    ind_plots_v$LR + ylim(0, 20) +
+      theme(legend.position = "none", axis.title = element_blank()),
+    ncol = 1
+  )
+  plotsCD_v <- plot_grid(
+    ind_plots_v$UL + ylim(0, 20) +
+      theme(legend.position = "none", axis.title = element_blank()),
+    ind_plots_v$LL + ylim(0, 20) +
+      theme(legend.position = "none", axis.title = element_blank()),
+    ncol = 1
+  )
+
+  full_grid_v <- plot_grid(
+    plotsCD_v,
+    cor_plot_v + theme(plot.margin = unit(c(2, 0.5, 2, 0.5), "cm")),
+    plotsAB_v,
+    ncol = 4,
+    rel_widths  = c(2, 1, 2, 0.5),
+    rel_heights = c(2, 1, 2)
+  )
+
+  full_grid_with_ylab_v <- plot_grid(
+    ggdraw() + draw_label("Response Time (s)", angle = 90, size = 12),
+    full_grid_v,
+    ncol = 2,
+    rel_widths = c(0.04, 1)
+  )
+
+  plot_grid(
+    full_grid_with_ylab_v,
+    legend_plot + theme(plot.margin = unit(c(0, 2, 0, -1), "cm")),
+    ncol = 1,
+    rel_heights = c(12, 1)
+  )
+}
+
+# Output subfolder (created automatically if absent)
+ind_resp_dir <- file.path(plots_dir, "individual_responses")
+dir.create(ind_resp_dir, showWarnings = FALSE, recursive = TRUE)
+
+# Ten fixed seeds — change or extend as needed
+variation_seeds <- c(42, 123, 456, 789, 1011, 2022, 3141, 5050, 7777, 9999)
+
+for (k in seq_along(variation_seeds)) {
+  grid_v <- build_ind_grid(variation_seeds[k])
+  ggsave(
+    filename = file.path(ind_resp_dir, sprintf("ind_responses_v%02d.png", k)),
+    plot     = grid_v,
+    height   = 6,
+    width    = 18,
+    bg       = "white"
+  )
+  message(sprintf("Saved version %d / %d (seed = %d)", k, length(variation_seeds), variation_seeds[k]))
+}
 ```
 
 The combined figure places each student's response sequence alongside their position in the θ scatter plot, allowing the reader to connect estimated latent parameters to observable behaviour. Students in the upper-right quadrant (high skipping, low accuracy) tend to show frequent, early skips interspersed with slow incorrect responses, consistent with low engagement or difficulty. Students in the lower-right quadrant (high skipping, high accuracy) are particularly informative: their sequences often reveal long runs of rapid skips followed by short bursts of correct responses, suggesting a deliberate strategy of avoiding effort on items perceived as unrewarding rather than unknown. This pattern of high skipping despite high accuracy is inconsistent with the assumptions of a unidimensional model, where skipping and inaccuracy are treated as manifestations of the same underlying trait.

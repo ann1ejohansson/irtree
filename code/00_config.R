@@ -18,7 +18,8 @@ pckgs <- c(
   "DescTools",
   "ggExtra",
   "cowplot",
-  "MASS"
+  "MASS",
+  "ggrepel"
 )
 # Install any missing packages
 missing_pckgs <- pckgs[!pckgs %in% installed.packages()[, "Package"]]
