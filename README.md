@@ -46,8 +46,6 @@ install.packages(c("lme4", "MASS", "data.table", "ggplot2",
                    "lmtest", "truncdist"))
 ```
 
-`truncdist` is optional: if installed, the RT simulation uses a proper truncated log-normal; otherwise it falls back to clipping.
-
 ### Running with Simulated Data
 
 The repository ships with a data simulator so the full pipeline can be run without access to the proprietary Prowise Learn dataset. To use it, make sure `use_simulated_data <- TRUE` in `00_config.R` (this is the default), then run the scripts in order:
@@ -87,8 +85,6 @@ All shared settings live in `00_config.R` and are sourced automatically:
 
 ## Output
 
-`03_irtree_fit.R` saves four model objects and a model comparison table (`model_comp.Rdata`) to `results/models/`. `04_irtree_kfolds.R` saves per-fold summaries and a combined `k_folds.Rdata` to `results/k_folds/`, with intermediate saves after every fold so partial results are not lost if the run is interrupted. Figures are saved to `results/plots/` via `save_plot()`, defined in `00_config.R`.
-
-## Reproducibility
-
-All scripts share `random_seed` from `00_config.R`. The cross-validation fold assignment in `04_irtree_kfolds.R` re-sets this seed at the top of the script. The held-out row identifiers are saved in the `removed` data frame for auditing. Running `01_generate_example_data.R` followed by `03_irtree_fit.R` and `04_irtree_kfolds.R` in sequence with default settings should produce identical results across machines.
+`03_irtree_fit.R` saves four model objects and a model comparison table (`model_comp.Rdata`) to `results/models/`. 
+`04_irtree_kfolds.R` saves per-fold summaries and a combined `k_folds.Rdata` to `results/k_folds/`. 
+Figures are saved to `results/plots/` via `save_plot()`, defined in `00_config.R`.
