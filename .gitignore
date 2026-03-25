@@ -28,6 +28,9 @@
 *.swo
 *~
 
+# Previous manuscript submissions
+previous-manuscripts/
+
 # Claude
 CLAUDE.md
 .claude/
