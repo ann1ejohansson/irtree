@@ -1,13 +1,33 @@
+# LaTeX build artefacts (keep .tex and .pdf)
 *.aux
-*.bcf
-*.log
-*.synctex(busy)
-*.DS_Store
 *.bbl
+*.bcf
 *.blg
 *.fdb_latexmk
 *.fls
+*.lof
+*.log
+*.lot
+*.nav
+*.out
 *.run.xml
+*.snm
 *.synctex.gz
-*.DS_Store
-.claude
+*.synctex(busy)
+*.toc
+*.vrb
+*-blx.bib
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor / IDE caches
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude
+CLAUDE.md
+.claude/
