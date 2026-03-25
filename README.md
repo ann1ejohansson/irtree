@@ -1,4 +1,6 @@
-# IRTree Analysis of Skip Behaviour in an Adaptive Learning Platform
+# IRTree Analysis of Skip Behaviour in an Adaptive Learning Platform 
+
+## 🌳
 
 This repository contains the analysis code for a study of student skip behaviour in [Prowise Learn](https://www.prowise.com/en/learn/), an adaptive mathematics platform used in Dutch primary schools. Students completing number-sequence exercises can bypass any item by clicking a question mark (?) button. We model this skip decision jointly with response accuracy using an **Item Response Tree (IRTree)** framework.
 
