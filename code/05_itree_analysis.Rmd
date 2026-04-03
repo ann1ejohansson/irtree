@@ -81,6 +81,12 @@ p_exclusion <- ggplot(logs[, .(count_skip = sum(question_mark)), .(in_model, use
   theme_bw()
 p_exclusion
 save_plot(p_exclusion, name = "skip_distribution_exclusion")
+
+logs_selection_20 %>% 
+  group_by(in_model) %>% 
+  count()
+  
+  
 ```
 
 
@@ -285,7 +291,7 @@ print(round(exp(int_coefs[int_rows, "Estimate"]), 3))
 
 ## Response type over response time
 
-The response deadline in the Series game is 20 seconds. The timing of a skip response relative to this deadline is informative: a skip early in the response window is consistent with a student quickly deciding they do not know the answer, while a skip close to the deadline may reflect a last resort to avoid a time penalty. We plot the probability of each response type (correct, error, question mark) as a function of response time, overlaid on the distribution of response times to indicate where most observations fall.
+The response deadline in the Series game is 20 seconds. The timing of a skip response relative to this deadline is informative: a skip early in the response window is consistent with a student quickly deciding they do not know the answer, while a skip close to the deadline may reflect a last resort to avoid a time penalty. We plot the probability of each response type (correct, error, Skip) as a function of response time, overlaid on the distribution of response times to indicate where most observations fall.
 
 ```{r plot-rt}
 logs[, t := round(response_in_milliseconds / 1000, 1)]
@@ -302,7 +308,7 @@ time_plot <- ggplot(
     aesthetics = c("fill", "color"),
     values = colors[c(1, 2, 4)],
     name = "Response",
-    labels = c("Correct", "Error", "Question Mark")
+    labels = c("Correct", "Error", "Skip")
   ) +
   geom_vline(xintercept = 20, linetype = "dotted") +
   labs(x = "Response Time", y = "Probability of Response", size = "Frequency") +
@@ -338,7 +344,7 @@ time_plot_dist <- ggplot() +
     aesthetics = c("fill", "color"),
     values = colors[c(1, 2, 4)],
     name = "Response",
-    labels = c("Correct", "Error", "Question Mark")
+    labels = c("Correct", "Error", "Skip")
   ) +
   geom_vline(xintercept = 20, linetype = "dotted") +
   labs(x = "Response Time", y = "Probability of Response", size = "Frequency") +
@@ -399,7 +405,7 @@ p_session_types <- ggplot(
     aesthetics = c("fill", "color"),
     values = colors[c(2, 4)],
     name = "Response",
-    labels = c("Error", "Question Mark")
+    labels = c("Error", "Skip")
   ) +
   labs(x = "Session Count", y = "Probability of Response", size = "Frequency") +
   scale_x_continuous(breaks = c(1, 25, 50, 75, 100), limits = c(1, 100)) +
@@ -410,6 +416,24 @@ p_session_types <- ggplot(
 p_session_types
 save_plot(p_session_types, name = "response_types_over_sessions")
 ```
+
+# Check rating variation
+
+```{r rating-variation}
+load("~/research-collaboration/question-mark/new data/logs_selection_20.Rdata")
+
+logs_selection_20 %>% 
+  summarise(time = difftime(last(created), first(created), unit = "weeks"),
+            rating_diff = max(new_user_domain_rating) - min(new_user_domain_rating),
+            mean_rating = mean(new_user_domain_rating), 
+            sd_rating = sd(new_user_domain_rating))
+
+
+
+range(logs_selection_20$new_user_domain_rating)
+sd(logs_selection_20$new_user_domain_rating)
+```
+
 
 # Model analysis
 
@@ -505,7 +529,8 @@ ranefs <- data.frame(
   )
 )
 rm(ranef_user_node1, ranef_user_node2, ranef_item_node1, ranef_item_node2)
-# save(ranefs, file = "ranefs_df.Rdata")
+save(ranefs, file = file.path(results_dir, "models/ranefs_df.Rdata"))
+file.path(results_dir, "models/mod_tree.Rdata")
 # load("ranefs_df.Rdata")
 ```
 
@@ -669,11 +694,11 @@ for (quadrant in quadrant_names) {
   dat_sub <- logs[logs$user_id %in% users, ]
   dat_sub$response_new <- ifelse(
     dat_sub$q == 1,
-    "Question Mark",
+    "Skip",
     ifelse(dat_sub$correct_answered == 0, "Error", "Correct")
   )
   dat_sub <- dat_sub[order(dat_sub$id), ]
-  dat_sub$rt <- dat_sub$rt / 1000   # convert ms → s
+  #dat_sub$rt <- dat_sub$rt / 1000   # convert ms → s
   dat_sub$item_number <- 1:nrow(dat_sub)
   # For left-column quadrants (LL, UL) reverse the factor levels so that the
   # lower-lettered user renders at the bottom of the panel, giving a
@@ -703,7 +728,7 @@ for (quadrant in quadrant_names) {
       values = c(
         "Correct" = "gray40",
         "Error" = "tomato3",
-        "Question Mark" = "tan1"
+        "Skip" = "tan1"
       )
     ) +
     facet_wrap(
@@ -736,8 +761,8 @@ df_ind_sub <- df_ind[complete.cases(df_ind$label), ]
 cor_plot <- ggplot(df_ind, aes(x = `1`, y = `2`)) +
   geom_point(color = "gray40", alpha = 0.3) +
   geom_smooth(method = "lm", color = "gray7", fill = "gray7") +
+  geom_label(data = df_ind_sub, aes(label = label), size = 3, nudge_x = -0.2, nudge_y = 0.3) +
   geom_point(data = df_ind_sub, aes(x = `1`, y = `2`), color = "tomato2") +
-  geom_label(data = df_ind_sub, aes(label = label), size = 3, nudge_x = 0.2, nudge_y = 0.2) +
   labs(
     x = "User Propensity to Skip an Item",
     y = "User Propensity for Incorrect Response"
@@ -769,7 +794,7 @@ legend_plot <- ggplot(
   data.frame(
     x = c(1, 2, 3),
     y = c(1, 2, 3),
-    label = c("Correct", "Incorrect", "Question Mark")
+    label = c("Correct", "Incorrect", "Skip")
   ),
   aes(x = x, y = y, color = label)
 ) +
@@ -779,9 +804,9 @@ legend_plot <- ggplot(
     values = c(
       "Correct" = "gray30",
       "Incorrect" = "tomato3",
-      "Question Mark" = "tan2"
+      "Skip" = "tan2"
     ),
-    labels = c("Correct", "Incorrect", "Question Mark")
+    labels = c("Correct", "Incorrect", "Skip")
   ) +
   guides(color = guide_legend(override.aes = list(size = 5, alpha = 1))) + # Control legend appearance
   theme_void() + # Remove axes and background
@@ -888,11 +913,11 @@ build_ind_grid <- function(seed) {
     dat_sub_v <- logs[logs$user_id %in% users_v, ]
     dat_sub_v$response_new <- ifelse(
       dat_sub_v$q == 1,
-      "Question Mark",
+      "Skip",
       ifelse(dat_sub_v$correct_answered == 0, "Error", "Correct")
     )
     dat_sub_v <- dat_sub_v[order(dat_sub_v$id), ]
-    dat_sub_v$rt          <- dat_sub_v$rt / 1000  # ms -> s
+    #dat_sub_v$rt          <- dat_sub_v$rt / 1000  # ms -> s
     dat_sub_v$item_number <- 1:nrow(dat_sub_v)
 
     facet_levels_v <- if (quadrant %in% c("LL", "UL")) rev(users_v) else users_v
@@ -913,7 +938,7 @@ build_ind_grid <- function(seed) {
       scale_color_manual(values = c(
         "Correct"       = "gray40",
         "Error"         = "tomato3",
-        "Question Mark" = "tan1"
+        "Skip" = "tan1"
       )) +
       facet_wrap(
         ~user_id, nrow = 10, scales = "free",
@@ -935,11 +960,11 @@ build_ind_grid <- function(seed) {
   cor_plot_v <- ggplot(df_ind_v, aes(x = `1`, y = `2`)) +
     geom_point(color = "gray40", alpha = 0.3) +
     geom_smooth(method = "lm", color = "gray7", fill = "gray7") +
-    geom_point(data = df_ind_sub_v, aes(x = `1`, y = `2`), color = "tomato2") +
     geom_label(
       data = df_ind_sub_v, aes(label = label),
-      size = 3, nudge_x = 0.2, nudge_y = 0.2
+      size = 3.5, nudge_x = -0.3, nudge_y = -0.3
     ) +
+    geom_point(data = df_ind_sub_v, aes(x = `1`, y = `2`), color = "tomato2") +
     labs(
       x = "User Propensity to Skip an Item",
       y = "User Propensity for Incorrect Response"
@@ -991,7 +1016,7 @@ ind_resp_dir <- file.path(plots_dir, "individual_responses")
 dir.create(ind_resp_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Ten fixed seeds — change or extend as needed
-variation_seeds <- c(42, 123, 456, 789, 1011, 2022, 3141, 5050, 7777, 9999)
+variation_seeds <- c(1234, 123, 456, 789, 1010, 2020, 3030, 12110396, 121103961, 980414)
 
 for (k in seq_along(variation_seeds)) {
   grid_v <- build_ind_grid(variation_seeds[k])
@@ -1006,4 +1031,4 @@ for (k in seq_along(variation_seeds)) {
 }
 ```
 
-The combined figure places each student's response sequence alongside their position in the θ scatter plot, allowing the reader to connect estimated latent parameters to observable behaviour. Students in the upper-right quadrant (high skipping, low accuracy) tend to show frequent, early skips interspersed with slow incorrect responses, consistent with low engagement or difficulty. Students in the lower-right quadrant (high skipping, high accuracy) are particularly informative: their sequences often reveal long runs of rapid skips followed by short bursts of correct responses, suggesting a deliberate strategy of avoiding effort on items perceived as unrewarding rather than unknown. This pattern of high skipping despite high accuracy is inconsistent with the assumptions of a unidimensional model, where skipping and inaccuracy are treated as manifestations of the same underlying trait.
+The combined figure places each student's response sequence alongside their position in the θ scatter plot, connecting their estimated latent parameters to observable behavior. Students in the upper-right quadrant (high skipping, low accuracy) tend to show frequent, early skips interspersed with slow incorrect responses, consistent with low engagement or difficulty. Students in the lower-right quadrant (high skipping, high accuracy) are particularly informative: their sequences often reveal long runs of rapid skips followed by short bursts of correct responses, suggesting a deliberate strategy of avoiding effort on items perceived as unrewarding rather than unknown. This pattern of high skipping despite high accuracy is inconsistent with the assumptions of a unidimensional model, where skipping and inaccuracy are treated as manifestations of the same underlying trait.

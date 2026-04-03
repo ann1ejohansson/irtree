@@ -65,13 +65,13 @@ logs <- get(data_object) # works for both "sim_logs" and "logs"
 # ============================================================
 # Grade filter: thresholds are defined in 00_config.R so they stay consistent
 # across the modelling pipeline and the descriptive analysis in the Rmd.
-logs <- logs[
-  logs$grade >= min_grade & logs$grade <= max_grade,
-]
+#logs <- logs[
+#  logs$grade >= min_grade & logs$grade <= max_grade,
+#]
 
 # Snapshot after grade filter
-.n_rows_grade <- nrow(logs)
-.n_users_grade <- length(unique(logs$user_id))
+#.n_rows_grade <- nrow(logs)
+#.n_users_grade <- length(unique(logs$user_id))
 
 # Derive skip indicator from the answer string ("¿" is the Prowise Learn
 # platform's internal encoding for a skip). This makes the skip flag available
@@ -141,22 +141,22 @@ cat(sprintf(
   .n_rows_raw,
   .n_users_raw
 ))
-cat(sprintf(
-  "%-28s %6d responses  %4d users  (-%d responses, -%d users)\n",
-  sprintf("After grade filter (%d-%d):", min_grade, max_grade),
-  .n_rows_grade,
-  .n_users_grade,
-  .n_rows_raw - .n_rows_grade,
-  .n_users_raw - .n_users_grade
-))
-cat(sprintf(
-  "%-28s %6d responses  %4d users  (-%d responses, -%d users)\n",
-  sprintf("After skip filter (>=%d):", min_skips),
-  .n_rows_final,
-  .n_users_final,
-  .n_rows_grade - .n_rows_final,
-  .n_users_grade - .n_users_final
-))
+#cat(sprintf(
+#  "%-28s %6d responses  %4d users  (-%d responses, -%d users)\n",
+#  sprintf("After grade filter (%d-%d):", min_grade, max_grade),
+#  .n_rows_grade,
+#  .n_users_grade,
+#  .n_rows_raw - .n_rows_grade,
+#  .n_users_raw - .n_users_grade
+#))
+# cat(sprintf(
+#   "%-28s %6d responses  %4d users  (-%d responses, -%d users)\n",
+#   sprintf("After skip filter (>=%d):", min_skips),
+#   .n_rows_final,
+#   .n_users_final,
+#   .n_rows_grade - .n_rows_final,
+#   .n_users_grade - .n_users_final
+# ))
 cat(sprintf(
   "%-28s %6d responses  %4d users  (%.1f%% of raw responses retained)\n",
   "Final analytical sample:",
@@ -168,8 +168,8 @@ cat(sprintf(
 rm(
   .n_rows_raw,
   .n_users_raw,
-  .n_rows_grade,
-  .n_users_grade,
+  #.n_rows_grade,
+  #.n_users_grade,
   .n_rows_final,
   .n_users_final
 )
